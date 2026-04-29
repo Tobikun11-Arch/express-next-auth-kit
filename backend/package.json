@@ -7,7 +7,8 @@
     "build": "tsc",
     "dev": "tsx watch index.ts",
     "start": "node dist/index.js",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test": "jest"
   },
   "keywords": [],
   "author": "",
