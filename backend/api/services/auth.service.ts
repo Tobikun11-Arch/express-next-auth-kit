@@ -1,11 +1,11 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import {env} from '../config/env';
-import {customerRepository} from '../repositories/customer.repository';
+import {userRepository} from '../repositories/user.repository';
 import {adminRepository} from '../repositories/admin.repository';
 import {ApiError} from '../utils/error';
 import {emailService} from './email.service';
-import {verificationCodeEmailTemplate} from '../templates/verificationCodeEmail
+import {verificationCodeEmailTemplate} from '../templates/verificationCodeEmail'
 import {resetPasswordEmailTemplate} from '../templates/resetPasswordEmail';
 
 function generateVerificationCode() {
@@ -24,16 +24,12 @@ export const authService = {
     password: string;
     username: string;
   }) {
-    const [existingEmail, existingPhone] = await Promise.all([
-      customerRepository.findByEmail(data.email),
+    const [existingEmail] = await Promise.all([
+      userRepository.findByEmail(data.email),
     ]);
 
     if (existingEmail) {
       throw new ApiError(409, 'EMAIL_EXISTS', 'Email already exists');
-    }
-
-    if (existingPhone) {
-      throw new ApiError(409, 'PHONE_EXISTS', 'Phone number already exists');
     }
 
     try {
@@ -41,7 +37,7 @@ export const authService = {
       const verificationCode = generateVerificationCode();
       const verificationExpiry = getVerificationExpiry(10);
 
-      const customer = await customerRepository.create({
+      const user = await userRepository.create({
         firstName: data.firstName,
         lastName: data.lastName,
         email: data.email,
@@ -65,7 +61,7 @@ export const authService = {
         html: emailTpl.html
       });
 
-      return {id: customer.id, email: customer.email};
+      return {id: user.id, email: user.email};
     } catch (err: any) {
       const code = err?.code;
       const rawMessage = String(err?.message ?? '');
@@ -91,8 +87,8 @@ export const authService = {
         if (isUsername || rawMessage.toLowerCase().includes('username')) {
           throw new ApiError(
             409,
-            'PHONE_EXISTS',
-            'Phone number already exists'
+            'USERNAME_EXISTS',
+            'username already exists'
           );
         }
 
@@ -108,18 +104,18 @@ export const authService = {
   },
 
   async verify(email: string, code: string) {
-    const customer = await customerRepository.findByEmail(email);
+    const user = await userRepository.findByEmail(email);
 
     if (
-      !customer ||
-      !customer.verificationCode ||
-      !customer.verificationExpiry
+      !user ||
+      !user.verificationCode ||
+      !user.verificationExpiry
     ) {
       throw new ApiError(400, 'INVALID_CODE', 'Invalid verification code');
     }
 
-    const codeMatches = customer.verificationCode === code;
-    const notExpired = customer.verificationExpiry > new Date();
+    const codeMatches = user.verificationCode === code;
+    const notExpired = user.verificationExpiry > new Date();
 
     if (!codeMatches || !notExpired) {
       throw new ApiError(
@@ -129,23 +125,23 @@ export const authService = {
       );
     }
 
-    await customerRepository.markVerified(email);
+    await userRepository.markVerified(email);
   },
 
   async resendVerification(email: string) {
-    const customer = await customerRepository.findByEmail(email);
-    if (!customer) {
+    const user = await userRepository.findByEmail(email);
+    if (!user) {
       throw new ApiError(404, 'USER_NOT_FOUND', 'User not found');
     }
 
-    if (customer.isVerified) {
+    if (user.isVerified) {
       throw new ApiError(400, 'ALREADY_VERIFIED', 'Email already verified');
     }
 
     const verificationCode = generateVerificationCode();
     const verificationExpiry = getVerificationExpiry(10);
 
-    await customerRepository.setVerificationCode(
+    await userRepository.setVerificationCode(
       email,
       verificationCode,
       verificationExpiry
@@ -154,7 +150,7 @@ export const authService = {
     const emailTpl = verificationCodeEmailTemplate({
       code: verificationCode,
       expiresMinutes: 10,
-      recipientName: customer.firstName
+      recipientName: user.firstName
     });
 
     await emailService.sendEmail({
@@ -185,35 +181,35 @@ export const authService = {
   },
 
   async forgotPassword(email: string) {
-    const customer = await customerRepository.findByEmail(email);
+    const user = await userRepository.findByEmail(email);
 
-    if (!customer || !customer.isVerified) return;
+    if (!user || !user.isVerified) return;
 
     const resetCode = generateVerificationCode();
     const resetExpiry = getVerificationExpiry(10);
 
-    await customerRepository.setVerificationCode(email, resetCode, resetExpiry);
+    await userRepository.setVerificationCode(email, resetCode, resetExpiry);
 
     await authService.sendResetPasswordCodeEmail({
       email,
       code: resetCode,
-      recipientName: customer.firstName
+      recipientName: user.firstName
     });
   },
 
   async resetPassword(email: string, code: string, newPassword: string) {
-    const customer = await customerRepository.findByEmail(email);
+    const user = await userRepository.findByEmail(email);
 
     if (
-      !customer ||
-      !customer.verificationCode ||
-      !customer.verificationExpiry
+      !user ||
+      !user.verificationCode ||
+      !user.verificationExpiry
     ) {
       throw new ApiError(400, 'INVALID_CODE', 'Invalid or expired reset code');
     }
 
-    const codeMatches = customer.verificationCode === code;
-    const notExpired = customer.verificationExpiry > new Date();
+    const codeMatches = user.verificationCode === code;
+    const notExpired = user.verificationExpiry > new Date();
 
     if (!codeMatches || !notExpired) {
       throw new ApiError(400, 'EXPIRED_CODE', 'Reset code expired or invalid');
@@ -222,19 +218,20 @@ export const authService = {
     const passwordHash = await bcrypt.hash(newPassword, 10);
 
     // Clear the code then update the password
-    await customerRepository.clearVerificationCode(email);
-    await customerRepository.updateProfile(customer.id, {passwordHash} as any);
+    await userRepository.clearVerificationCode(email);
+    await userRepository.updateProfile(user.id, {passwordHash} as any);
   },
 
   async login(email: string, password: string) {
     const identifier = email;
-    const [customer, admin] = await Promise.all([
+    const [user, admin] = await Promise.all([
+      userRepository.findByEmail(identifier),
       adminRepository.findByEmailOrUsername(identifier)
     ]);
 
-    const user = customer || admin;
-    const userType = customer
-      ? 'customer'
+    const users = user || admin;
+    const userType = user
+      ? 'user'
       : admin
           ? 'admin'
           : null;
@@ -279,30 +276,30 @@ export const authService = {
     try {
       const payload = jwt.verify(refreshToken, env.JWT_REFRESH_SECRET) as {
         userId: string;
-        type?: 'customer' | 'admin';
+        type?: 'user' | 'admin';
       };
 
       const tokenType = payload.type;
 
-      let userType: 'customer' | 'admin' | null = null;
-      let user: any = null;
+      let userType: 'user' | 'admin' | null = null;
+      let users: any = null;
 
       if (tokenType) {
         userType = tokenType;
-        user = await (tokenType === 'customer'
-          ? customerRepository.findById(payload.userId)
+        users = await (tokenType === 'user'
+          ? userRepository.findById(payload.userId)
           : tokenType === 'admin'
             ? adminRepository.findById(payload.userId)
             : null);
       } else {
-        const [customer, admin] = await Promise.all([
-          customerRepository.findById(payload.userId),
+        const [user, admin] = await Promise.all([
+          userRepository.findById(payload.userId),
           adminRepository.findById(payload.userId)
         ]);
 
-        user = customer || admin;
-        userType = customer
-          ? 'customer'
+        users = user || admin;
+        userType = user
+          ? 'user'
           : admin
             ? 'admin'
             : admin
@@ -310,16 +307,16 @@ export const authService = {
               : null;
       }
 
-      if (!user || !userType) {
+      if (!users || !userType) {
         throw new ApiError(401, 'UNAUTHORIZED', 'Invalid token');
       }
 
-      if (!user.isVerified) {
+      if (!users.isVerified) {
         throw new ApiError(403, 'NOT_VERIFIED', 'Email not verified');
       }
 
       const accessToken = jwt.sign(
-        {userId: user.id, type: userType},
+        {userId: users.id, type: userType},
         env.JWT_SECRET,
         {expiresIn: '15m'}
       );
