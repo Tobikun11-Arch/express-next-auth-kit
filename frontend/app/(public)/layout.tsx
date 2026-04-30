@@ -9,7 +9,7 @@ export default function PublicLayout({children}: {children: React.ReactNode}) {
   return (
     <>
       <div>
-        <button onClick={() => router.push('/')}>Sign in</button>
+        <button onClick={() => router.push('/sign-in')}>Sign in</button>
       </div>
       <main className="min-h-screen bg-amber-50">{children}</main>
       <span>Footer</span>
