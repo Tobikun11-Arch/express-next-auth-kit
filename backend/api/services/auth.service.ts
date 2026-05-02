@@ -1,3 +1,4 @@
+
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import {env} from '../config/env';
@@ -5,7 +6,7 @@ import {userRepository} from '../repositories/user.repository';
 import {adminRepository} from '../repositories/admin.repository';
 import {ApiError} from '../utils/error';
 import {emailService} from './email.service';
-import {verificationCodeEmailTemplate} from '../templates/verificationCodeEmail'
+import {verificationCodeEmailTemplate} from '../templates/verificationCodeEmail';
 import {resetPasswordEmailTemplate} from '../templates/resetPasswordEmail';
 
 function generateVerificationCode() {
@@ -16,6 +17,11 @@ function getVerificationExpiry(minutes: number) {
   return new Date(Date.now() + minutes * 60 * 1000);
 }
 
+type RefreshTokenPayload = {
+  userId: string;
+  type?: 'user' | 'admin';
+};
+
 export const authService = {
   async register(data: {
     firstName: string;
@@ -25,7 +31,7 @@ export const authService = {
     username: string;
   }) {
     const [existingEmail] = await Promise.all([
-      userRepository.findByEmail(data.email),
+      userRepository.findByEmail(data.email)
     ]);
 
     if (existingEmail) {
@@ -85,11 +91,7 @@ export const authService = {
         );
 
         if (isUsername || rawMessage.toLowerCase().includes('username')) {
-          throw new ApiError(
-            409,
-            'USERNAME_EXISTS',
-            'username already exists'
-          );
+          throw new ApiError(409, 'USERNAME_EXISTS', 'username already exists');
         }
 
         if (isEmail || rawMessage.toLowerCase().includes('email')) {
@@ -106,11 +108,7 @@ export const authService = {
   async verify(email: string, code: string) {
     const user = await userRepository.findByEmail(email);
 
-    if (
-      !user ||
-      !user.verificationCode ||
-      !user.verificationExpiry
-    ) {
+    if (!user || !user.verificationCode || !user.verificationExpiry) {
       throw new ApiError(400, 'INVALID_CODE', 'Invalid verification code');
     }
 
@@ -200,11 +198,7 @@ export const authService = {
   async resetPassword(email: string, code: string, newPassword: string) {
     const user = await userRepository.findByEmail(email);
 
-    if (
-      !user ||
-      !user.verificationCode ||
-      !user.verificationExpiry
-    ) {
+    if (!user || !user.verificationCode || !user.verificationExpiry) {
       throw new ApiError(400, 'INVALID_CODE', 'Invalid or expired reset code');
     }
 
@@ -229,14 +223,10 @@ export const authService = {
       adminRepository.findByEmailOrUsername(identifier)
     ]);
 
-    const users = user || admin;
-    const userType = user
-      ? 'user'
-      : admin
-          ? 'admin'
-          : null;
+    const account = user || admin;
+    const userType = user ? 'user' : admin ? 'admin' : null;
 
-    if (!user || !userType) {
+    if (!account || !userType) {
       throw new ApiError(
         401,
         'INVALID_CREDENTIALS',
@@ -244,11 +234,11 @@ export const authService = {
       );
     }
 
-    if (!user.isVerified) {
+    if (!account.isVerified) {
       throw new ApiError(403, 'NOT_VERIFIED', 'Email not verified');
     }
 
-    const match = await bcrypt.compare(password, user.passwordHash);
+    const match = await bcrypt.compare(password, account.passwordHash);
     if (!match) {
       throw new ApiError(
         401,
@@ -258,35 +248,35 @@ export const authService = {
     }
 
     const accessToken: string = jwt.sign(
-      {userId: user.id, type: userType},
+      {userId: account.id, type: userType},
       env.JWT_SECRET,
       {expiresIn: '15m'}
     );
 
     const refreshToken = jwt.sign(
-      {userId: user.id, type: userType},
+      {userId: account.id, type: userType},
       env.JWT_REFRESH_SECRET,
       {expiresIn: '7d'}
     );
 
-    return {accessToken, refreshToken, user, userType};
+    return {accessToken, refreshToken, user: account, userType};
   },
 
   async refreshAccessToken(refreshToken: string) {
     try {
-      const payload = jwt.verify(refreshToken, env.JWT_REFRESH_SECRET) as {
-        userId: string;
-        type?: 'user' | 'admin';
-      };
+      const payload = jwt.verify(
+        refreshToken,
+        env.JWT_REFRESH_SECRET
+      ) as RefreshTokenPayload;
 
       const tokenType = payload.type;
 
       let userType: 'user' | 'admin' | null = null;
-      let users: any = null;
+      let account: any = null;
 
       if (tokenType) {
         userType = tokenType;
-        users = await (tokenType === 'user'
+        account = await (tokenType === 'user'
           ? userRepository.findById(payload.userId)
           : tokenType === 'admin'
             ? adminRepository.findById(payload.userId)
@@ -297,26 +287,20 @@ export const authService = {
           adminRepository.findById(payload.userId)
         ]);
 
-        users = user || admin;
-        userType = user
-          ? 'user'
-          : admin
-            ? 'admin'
-            : admin
-              ? 'admin'
-              : null;
+        account = user || admin;
+        userType = user ? 'user' : admin ? 'admin' : null;
       }
 
-      if (!users || !userType) {
+      if (!account || !userType) {
         throw new ApiError(401, 'UNAUTHORIZED', 'Invalid token');
       }
 
-      if (!users.isVerified) {
+      if (!account.isVerified) {
         throw new ApiError(403, 'NOT_VERIFIED', 'Email not verified');
       }
 
       const accessToken = jwt.sign(
-        {userId: users.id, type: userType},
+        {userId: account.id, type: userType},
         env.JWT_SECRET,
         {expiresIn: '15m'}
       );

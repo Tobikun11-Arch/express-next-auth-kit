@@ -17,7 +17,7 @@ type LoginResponse = {
   user: {
     id: string;
     email: string;
-    type: 'admin' | 'users';
+    type: 'admin' | 'user';
   };
 };
 type LogoutResponse = {message: string};
@@ -25,7 +25,7 @@ type LogoutResponse = {message: string};
 type MeResponse = {
   user: {
     id: string;
-    type: 'admin' | 'users';
+    type: 'admin' | 'user';
   };
 };
 
