@@ -29,7 +29,7 @@ const TABS = [
 
 type DashboardLayoutProps = {
   children: React.ReactNode;
-  home: React.ReactNode;
+  home?: React.ReactNode;
   settings?: React.ReactNode;
   profile?: React.ReactNode;
 };
