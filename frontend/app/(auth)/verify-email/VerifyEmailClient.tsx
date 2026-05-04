@@ -12,6 +12,10 @@ import {
   InputOTPSeparator
 } from '@/components/ui/input-otp';
 import {resendVerificationCode, verifyCustomerEmail} from '@/lib/api/authApi';
+import {
+  verifyPasswordResetCode,
+  resendPasswordResetCode
+} from '@/lib/api/authApi';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 
 export default function VerifyEmailClient() {
@@ -19,6 +23,8 @@ export default function VerifyEmailClient() {
   const searchParams = useSearchParams();
 
   const emailFromQuery = searchParams.get('email') ?? '';
+  const mode = searchParams.get('mode'); // 'reset' or null (signup)
+  const isResetMode = mode === 'reset';
 
   const [code, setCode] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -39,12 +45,22 @@ export default function VerifyEmailClient() {
     setSuccessMessage(null);
 
     try {
-      await verifyCustomerEmail({
-        email: emailFromQuery.trim(),
-        code: code.trim()
-      });
-      setSuccessMessage('Your email has been verified. You can now sign in.');
-      router.push('/sign-in');
+      if (isResetMode) {
+        await verifyPasswordResetCode({
+          email: emailFromQuery.trim(),
+          code: code.trim()
+        });
+        router.push(
+          `/reset-password?email=${encodeURIComponent(emailFromQuery.trim())}&code=${code.trim()}`
+        );
+      } else {
+        await verifyCustomerEmail({
+          email: emailFromQuery.trim(),
+          code: code.trim()
+        });
+        setSuccessMessage('Your email has been verified. You can now sign in.');
+        router.push('/sign-in');
+      }
     } catch (error) {
       setErrorMessage(getFriendlyErrorMessage(error, 'Verification failed.'));
     } finally {
@@ -60,8 +76,13 @@ export default function VerifyEmailClient() {
     setSuccessMessage(null);
 
     try {
-      await resendVerificationCode({email: emailFromQuery.trim()});
-      setSuccessMessage('Verification code resent. Please check your email.');
+      if (isResetMode) {
+        await resendPasswordResetCode({email: emailFromQuery.trim()});
+        setSuccessMessage('Reset code resent. Please check your email.');
+      } else {
+        await resendVerificationCode({email: emailFromQuery.trim()});
+        setSuccessMessage('Verification code resent. Please check your email.');
+      }
     } catch (error) {
       setErrorMessage(getFriendlyErrorMessage(error, 'Failed to resend code.'));
     } finally {
@@ -73,10 +94,12 @@ export default function VerifyEmailClient() {
     <div className="space-y-6">
       <div className="space-y-2">
         <h2 className="text-3xl font-bold tracking-tight text-foreground">
-          Verify your email
+          {isResetMode ? 'Check your email' : 'Verify your email'}
         </h2>
         <p className="text-muted-foreground">
-          Enter the 6-digit code we sent to your email address.
+          {isResetMode
+            ? `Enter the 6-digit code we sent to ${emailFromQuery} to reset your password.`
+            : 'Enter the 6-digit code we sent to your email address.'}
         </p>
       </div>
 
@@ -115,7 +138,11 @@ export default function VerifyEmailClient() {
           size="lg"
           disabled={isSubmitting || !canSubmit}
         >
-          {isSubmitting ? 'Verifying...' : 'Verify Email'}
+          {isSubmitting
+            ? 'Verifying...'
+            : isResetMode
+              ? 'Verify & Continue'
+              : 'Verify Email'}
         </Button>
 
         <Button
@@ -143,13 +170,27 @@ export default function VerifyEmailClient() {
       </form>
 
       <p className="text-center text-sm text-muted-foreground">
-        Already verified?{' '}
-        <Link
-          href="/sign-in"
-          className="text-[#3c5e45] font-semibold hover:underline"
-        >
-          Sign in
-        </Link>
+        {isResetMode ? (
+          <>
+            Remember your password?{' '}
+            <Link
+              href="/sign-in"
+              className="text-[#3c5e45] font-semibold hover:underline"
+            >
+              Sign in
+            </Link>
+          </>
+        ) : (
+          <>
+            Already verified?{' '}
+            <Link
+              href="/sign-in"
+              className="text-[#3c5e45] font-semibold hover:underline"
+            >
+              Sign in
+            </Link>
+          </>
+        )}
       </p>
     </div>
   );

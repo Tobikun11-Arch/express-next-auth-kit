@@ -1,4 +1,3 @@
-
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import {env} from '../config/env';
@@ -195,6 +194,21 @@ export const authService = {
     });
   },
 
+  async verifyResetCode(email: string, code: string) {
+    const user = await userRepository.findByEmail(email);
+
+    if (!user || !user.verificationCode || !user.verificationExpiry) {
+      throw new ApiError(400, 'INVALID_CODE', 'Invalid or expired reset code');
+    }
+
+    const codeMatches = user.verificationCode === code;
+    const notExpired = user.verificationExpiry > new Date();
+
+    if (!codeMatches || !notExpired) {
+      throw new ApiError(400, 'EXPIRED_CODE', 'Reset code expired or invalid');
+    }
+  },
+
   async resetPassword(email: string, code: string, newPassword: string) {
     const user = await userRepository.findByEmail(email);
 
@@ -211,7 +225,6 @@ export const authService = {
 
     const passwordHash = await bcrypt.hash(newPassword, 10);
 
-    // Clear the code then update the password
     await userRepository.clearVerificationCode(email);
     await userRepository.updateProfile(user.id, {passwordHash} as any);
   },
