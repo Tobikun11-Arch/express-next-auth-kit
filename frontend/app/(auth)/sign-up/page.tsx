@@ -66,7 +66,7 @@ export default function SignUpPage() {
           Create an account
         </h2>
         <p className="text-muted-foreground">
-          Join DonClaudio&apos;s and start ordering
+          Your app highlights 
         </p>
       </div>
 

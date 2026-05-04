@@ -28,17 +28,16 @@ const AuthLayout = ({children}: AuthLayoutProps) => {
         <Image
           src="/assets/auth_img2.JPG"
           loading="eager"
-          alt="DonClaudio's Lechon"
+          alt="App background image"
           className="absolute inset-0 w-full h-full object-cover"
           width={800}
           height={1200}
         />
         <div className="absolute inset-0 bg-primary/78" />
         <div className="relative z-10 flex flex-col justify-end p-12 text-primary-foreground">
-          <h1 className="text-4xl font-bold mb-3">DonClaudio&apos;s</h1>
+          <h1 className="text-4xl font-bold mb-3">APP name</h1>
           <p className="text-lg opacity-90">
-            Authentic Filipino Lechon — slow-roasted to perfection since day
-            one.
+            App description goes here. This is a sample description to fill the space and give an idea of how the layout looks with text content.
           </p>
         </div>
       </div>
