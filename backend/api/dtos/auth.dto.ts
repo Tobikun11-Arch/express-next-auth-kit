@@ -36,10 +36,15 @@ export const resetPasswordDto = z.object({
   newPassword: z.string().min(8)
 });
 
+export const resendResetCodeDto = z.object({
+  email: z.string().email()
+});
+
 export type RegisterDto = z.infer<typeof registerDto>;
 export type VerifyDto = z.infer<typeof verifyDto>;
 export type ResendVerificationDto = z.infer<typeof resendVerificationDto>;
 export type LoginDto = z.infer<typeof loginDto>;
 export type RefreshDto = z.infer<typeof refreshDto>;
 export type ForgotPasswordDto = z.infer<typeof forgotPasswordDto>;
+export type ResendResetCodeDto = z.infer<typeof resendResetCodeDto>;
 export type ResetPasswordDto = z.infer<typeof resetPasswordDto>;

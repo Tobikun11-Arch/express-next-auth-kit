@@ -2,21 +2,25 @@
 
 import {useState} from 'react';
 import Link from 'next/link';
-import {Eye, EyeOff, LogIn} from 'lucide-react';
+import {Eye, EyeOff, KeyRound} from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
 import {Label} from '@/components/ui/label';
-import {useRouter} from 'next/navigation';
-import {login} from '@/lib/api/authApi';
+import {useRouter, useSearchParams} from 'next/navigation';
+import {resetPassword} from '@/lib/api/authApi';
 import {getFriendlyErrorMessage} from '@/lib/api/getFriendlyErrorMessage';
 
-export default function SignInPage() {
+export default function ResetPasswordPage() {
   const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const emailFromQuery = searchParams.get('email') ?? '';
+  const codeFromQuery = searchParams.get('code') ?? '';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,19 +31,24 @@ export default function SignInPage() {
       return;
     }
 
+    if (password !== confirmPassword) {
+      setErrorMessage('Passwords do not match. Please try again.');
+      return;
+    }
+
     setIsSubmitting(true);
     setErrorMessage(null);
     try {
-      const users = await login({email, password});
-      if (users.user.type === 'admin') {
-        router.push('/admin/dashboard');
-      } else if (users.user.type === 'user') {
-        router.push('/dashboard');
-      } else {
-        router.push('/dashboard');
-      }
+      await resetPassword({
+        email: emailFromQuery.trim(),
+        code: codeFromQuery.trim(),
+        newPassword: password,
+      });
+      router.push('/sign-in');
     } catch (error) {
-      setErrorMessage(getFriendlyErrorMessage(error, 'Failed to sign in'));
+      setErrorMessage(
+        getFriendlyErrorMessage(error, 'Unable to reset password. Please try again.')
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -49,37 +58,16 @@ export default function SignInPage() {
     <div className="space-y-6">
       <div className="space-y-2">
         <h2 className="text-3xl font-bold tracking-tight text-foreground">
-          Welcome back
+          Reset password
         </h2>
         <p className="text-muted-foreground">
-          Sign in to your account to continue
+          Enter your new password below.
         </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="email">Email or Phone Number</Label>
-          <Input
-            id="email"
-            type="text"
-            placeholder="you@example.com or 09xxxxxxxxx"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            disabled={isSubmitting}
-            required
-          />
-        </div>
-
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="password">Password</Label>
-            <Link
-              href="/forgot-password"
-              className="text-sm text-primary hover:underline font-medium"
-            >
-              Forgot password?
-            </Link>
-          </div>
+          <Label htmlFor="password">New Password</Label>
           <div className="relative">
             <Input
               id="password"
@@ -101,14 +89,27 @@ export default function SignInPage() {
           </div>
         </div>
 
+        <div className="space-y-2">
+          <Label htmlFor="confirmPassword">Confirm New Password</Label>
+          <Input
+            id="confirmPassword"
+            type="password"
+            placeholder="••••••••"
+            value={confirmPassword}
+            onChange={e => setConfirmPassword(e.target.value)}
+            disabled={isSubmitting}
+            required
+          />
+        </div>
+
         <Button
           type="submit"
           className="w-full bg-[#3c5e45]"
           size="lg"
           disabled={isSubmitting}
         >
-          <LogIn size={18} />
-          {isSubmitting ? 'Signing in...' : 'Sign In'}
+          <KeyRound size={18} />
+          {isSubmitting ? 'Resetting...' : 'Reset Password'}
         </Button>
 
         {errorMessage && (
@@ -119,12 +120,12 @@ export default function SignInPage() {
       </form>
 
       <p className="text-center text-sm text-muted-foreground">
-        Don&apos;t have an account?{' '}
+        Remember your password?{' '}
         <Link
-          href="/sign-up"
+          href="/sign-in"
           className="text-[#3c5e45] font-semibold hover:underline"
         >
-          Sign up
+          Sign in
         </Link>
       </p>
     </div>

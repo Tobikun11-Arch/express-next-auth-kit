@@ -60,6 +60,46 @@ export async function logout() {
   return res.data;
 }
 
+export async function sendPasswordResetCode(params: {email: string}) {
+  const res = await httpClient.post<{message: string}>(
+    '/auth/forgot-password',
+    params
+  );
+  return res.data;
+}
+
+export async function resendPasswordResetCode(params: {email: string}) {
+  const res = await httpClient.post<{message: string}>(
+    '/auth/resend-reset-code',
+    params
+  );
+  return res.data;
+}
+
+export async function verifyPasswordResetCode(params: {
+  email: string;
+  code: string;
+}) {
+  const res = await httpClient.post<{message: string}>(
+    '/auth/verify-reset-code',
+    params
+  );
+  return res.data;
+}
+
+export async function resetPassword(params: {
+  email: string;
+  code: string;
+  newPassword: string;
+}) {
+  const res = await httpClient.post<{message: string}>(
+    '/auth/reset-password',
+    params
+  );
+  return res.data;
+}
+
+
 export async function getMe() {
   const res = await httpClient.get<MeResponse>('/auth/me');
   return res.data;

@@ -128,5 +128,47 @@ export const authController = {
     } catch (error) {
       next(error);
     }
+  },
+
+  async forgotPassword(req: Request, res: Response, next: NextFunction) {
+    try {
+      await authService.forgotPassword(req.body.email);
+      res
+        .status(200)
+        .json({message: 'If that email exists, a reset code has been sent.'});
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async verifyResetCode(req: Request, res: Response, next: NextFunction) {
+    try {
+      await authService.verifyResetCode(req.body.email, req.body.code);
+      res.status(200).json({message: 'Code verified'});
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async resendResetCode(req: Request, res: Response, next: NextFunction) {
+    try {
+      await authService.forgotPassword(req.body.email);
+      res.status(200).json({message: 'Reset code resent'});
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async resetPassword(req: Request, res: Response, next: NextFunction) {
+    try {
+      await authService.resetPassword(
+        req.body.email,
+        req.body.code,
+        req.body.newPassword
+      );
+      res.status(200).json({message: 'Password reset successfully'});
+    } catch (error) {
+      next(error);
+    }
   }
 };
