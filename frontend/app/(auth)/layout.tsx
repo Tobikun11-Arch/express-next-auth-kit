@@ -7,7 +7,7 @@ import {useMeQuery} from '@/lib/hooks/auth/useMeQuery';
 import {getDashboardPath} from '@/lib/auth/redirects';
 import Loading from '../loading';
 
-interface AuthLayoutProps { 
+interface AuthLayoutProps {
   children: React.ReactNode;
 }
 
@@ -20,7 +20,7 @@ const AuthLayout = ({children}: AuthLayoutProps) => {
     router.replace(getDashboardPath(data.user.type));
   }, [data, isSuccess, router]);
 
-  if (isLoading || isFetching) return <Loading/>;
+  if (isLoading || isFetching) return <Loading />;
 
   return (
     <div className="flex min-h-screen">
