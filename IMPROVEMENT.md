@@ -7,6 +7,7 @@ This document outlines all issues found during a full audit of the authenticatio
 ## 🔴 Critical
 
 ### 1. Refresh tokens cannot be revoked
+
 **File:** `backend/api/services/auth.service.ts:265-311`
 
 Refresh tokens are pure JWTs with no server-side tracking. If stolen, they remain valid for 7 days with no way to invalidate them.
@@ -16,6 +17,7 @@ Refresh tokens are pure JWTs with no server-side tracking. If stolen, they remai
 ---
 
 ### 2. Forgot-password endpoints are not registered
+
 **File:** `backend/api/routes/auth.routes.ts`
 
 DTOs (`forgotPasswordDto`, `resetPasswordDto`) and service methods (`forgotPassword`, `resetPassword`) exist but are never wired to routes.
@@ -25,7 +27,9 @@ DTOs (`forgotPasswordDto`, `resetPasswordDto`) and service methods (`forgotPassw
 ---
 
 ### 3. Shared `verificationCode` field conflates email verification and password reset
+
 **Files:**
+
 - `backend/api/models/base/BaseUser.schema.ts:10-11`
 - `backend/api/services/auth.service.ts:189`
 
@@ -36,6 +40,7 @@ Both features use the same `verificationCode` / `verificationExpiry` fields on t
 ---
 
 ### 4. Email enumeration via `resendVerification`
+
 **File:** `backend/api/services/auth.service.ts:131-132`
 
 Returns `USER_NOT_FOUND` when the email does not exist, allowing attackers to probe which emails are registered.
@@ -45,6 +50,7 @@ Returns `USER_NOT_FOUND` when the email does not exist, allowing attackers to pr
 ---
 
 ### 5. Logout does not invalidate tokens
+
 **File:** `backend/api/controllers/auth.controller.ts:122-131`
 
 Clears cookies but does not prevent the JWTs from being used if they are captured elsewhere. Tokens remain valid until expiry.
@@ -54,6 +60,7 @@ Clears cookies but does not prevent the JWTs from being used if they are capture
 ---
 
 ### 6. No request body size limiter
+
 **File:** `backend/index.ts:23`
 
 `express.json()` is called with no `limit` option, allowing oversized payloads.
@@ -65,6 +72,7 @@ Clears cookies but does not prevent the JWTs from being used if they are capture
 ## 🟡 High
 
 ### 7. Weak password policy
+
 **File:** `backend/api/dtos/auth.dto.ts:7`
 
 Only requires minimum length of 8 characters. No uppercase, lowercase, digit, or special character rules. No breached-password check.
@@ -74,6 +82,7 @@ Only requires minimum length of 8 characters. No uppercase, lowercase, digit, or
 ---
 
 ### 8. Cookie config bypasses Zod validation
+
 **File:** `backend/api/controllers/auth.controller.ts:12-13`
 
 Reads `COOKIE_SECURE` and `COOKIE_SAMESITE` directly from `process.env` instead of the validated `env` export.
@@ -83,6 +92,7 @@ Reads `COOKIE_SECURE` and `COOKIE_SAMESITE` directly from `process.env` instead 
 ---
 
 ### 9. Race condition in `resetPassword`
+
 **File:** `backend/api/services/auth.service.ts:215-216`
 
 Clears the verification code before updating the password hash. If the password update fails, the code is gone and the user cannot retry.
@@ -92,6 +102,7 @@ Clears the verification code before updating the password hash. If the password 
 ---
 
 ### 10. Dead code in `refreshAccessToken`
+
 **File:** `backend/api/services/auth.service.ts:274-292`
 
 Fallback branch queries both user and admin repositories when `tokenType` is missing from the JWT payload, but the token is always signed with a type. This adds unnecessary database queries.
@@ -101,6 +112,7 @@ Fallback branch queries both user and admin repositories when `tokenType` is mis
 ---
 
 ### 11. Type-unsafe `as any` in `resetPassword`
+
 **File:** `backend/api/services/auth.service.ts:216`
 
 Passes `passwordHash` to `updateProfile` whose type does not accept it.
@@ -110,6 +122,7 @@ Passes `passwordHash` to `updateProfile` whose type does not accept it.
 ---
 
 ### 12. Hardcoded placeholder CORS origin
+
 **File:** `backend/index.ts:16`
 
 `'your-production-domain.com'` will either block legit requests or allow the wrong origin if forgotten.
@@ -119,6 +132,7 @@ Passes `passwordHash` to `updateProfile` whose type does not accept it.
 ---
 
 ### 13. MongoDB duplicate-key error parsing is brittle
+
 **File:** `backend/api/services/auth.service.ts:76-104`
 
 Parsing `err.message` and `err.keyPattern` strings is version-dependent and fragile across MongoDB driver versions.
@@ -130,6 +144,7 @@ Parsing `err.message` and `err.keyPattern` strings is version-dependent and frag
 ## 🟠 Medium
 
 ### 14. SMTP transport created on every email send
+
 **File:** `backend/api/services/email.service.ts:43-51`
 
 Creates a new Nodemailer transporter for each email. Should reuse a singleton.
@@ -139,6 +154,7 @@ Creates a new Nodemailer transporter for each email. Should reuse a singleton.
 ---
 
 ### 15. No CSRF protection
+
 Cookie-based auth with `SameSite` is partially protected, but if `COOKIE_SAMESITE=none` is configured there is no CSRF defense.
 
 **Fix:** Implement CSRF tokens for state-changing requests, or keep `SameSite=Strict`/`Lax`.
@@ -146,6 +162,7 @@ Cookie-based auth with `SameSite` is partially protected, but if `COOKIE_SAMESIT
 ---
 
 ### 16. No request logging middleware
+
 Pino is configured but never used to log incoming HTTP requests (method, URL, status code, duration).
 
 **Fix:** Add a middleware that logs each request using the configured Pino logger.
@@ -153,6 +170,7 @@ Pino is configured but never used to log incoming HTTP requests (method, URL, st
 ---
 
 ### 17. Inconsistent error code casing
+
 **Files:** `backend/api/services/auth.service.ts` and `backend/api/controllers/auth.controller.ts`
 
 Some codes use `SNAKE_CASE` (`EMAIL_EXISTS`), others use `UPPERCASE` (`UNAUTHORIZED`).
@@ -162,7 +180,9 @@ Some codes use `SNAKE_CASE` (`EMAIL_EXISTS`), others use `UPPERCASE` (`UNAUTHORI
 ---
 
 ### 18. Duplicate magic strings for cookie names
+
 **Files:**
+
 - `backend/api/controllers/auth.controller.ts:6-7`
 - `backend/api/middleware/auth.ts:6`
 
@@ -173,6 +193,7 @@ Some codes use `SNAKE_CASE` (`EMAIL_EXISTS`), others use `UPPERCASE` (`UNAUTHORI
 ---
 
 ### 19. Frontend sign-in page is a stub
+
 **File:** `frontend/app/(auth)/sign-in/page.tsx`
 
 Returns a placeholder `<div>SignInPage</div>` with no form implementation.
@@ -182,6 +203,7 @@ Returns a placeholder `<div>SignInPage</div>` with no form implementation.
 ---
 
 ### 20. Tests are fully commented out
+
 **File:** `backend/tests/auth.test.ts`
 
 No active tests exist.
@@ -191,7 +213,9 @@ No active tests exist.
 ---
 
 ### 21. Frontend username field mismatch
+
 **Files:**
+
 - `frontend/app/(auth)/sign-up/page.tsx:109` — `required` attribute on username
 - `backend/api/dtos/auth.dto.ts:8` — `username` is `optional()`
 
@@ -201,12 +225,12 @@ No active tests exist.
 
 ## 🟢 Low
 
-| # | Issue | File | Fix |
-|---|-------|------|-----|
-| 22 | `BaseUserDocument` missing `createdAt`/`updatedAt` despite `timestamps: true` | `BaseUser.schema.ts:3-12` | Extend `mongoose.Document` timestamps type |
-| 23 | Repository methods use `.exec()` inconsistently | `user.repository.ts` | Standardize all query methods to use `.exec()` |
-| 24 | `getCookieOptions` reads `process.env` on every request | `auth.controller.ts:9-16` | Cache or inject configuration |
-| 25 | No "change password" endpoint for authenticated users | `auth.service.ts` / `auth.routes.ts` | Add `PUT /auth/password` with current password verification |
-| 26 | No HTTP-to-HTTPS redirection in production | `index.ts` | Add a redirect middleware for production |
-| 27 | `.env.example` missing SMTP variables | `.env.example` | Add `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` |
-| 28 | `any` types used in catch blocks throughout | `auth.service.ts` | Replace with `unknown` and proper type narrowing |
+| #   | Issue                                                                         | File                                 | Fix                                                                 |
+| --- | ----------------------------------------------------------------------------- | ------------------------------------ | ------------------------------------------------------------------- |
+| 22  | `BaseUserDocument` missing `createdAt`/`updatedAt` despite `timestamps: true` | `BaseUser.schema.ts:3-12`            | Extend `mongoose.Document` timestamps type                          |
+| 23  | Repository methods use `.exec()` inconsistently                               | `user.repository.ts`                 | Standardize all query methods to use `.exec()`                      |
+| 24  | `getCookieOptions` reads `process.env` on every request                       | `auth.controller.ts:9-16`            | Cache or inject configuration                                       |
+| 25  | No "change password" endpoint for authenticated users                         | `auth.service.ts` / `auth.routes.ts` | Add `PUT /auth/password` with current password verification         |
+| 26  | No HTTP-to-HTTPS redirection in production                                    | `index.ts`                           | Add a redirect middleware for production                            |
+| 27  | `.env.example` missing SMTP variables                                         | `.env.example`                       | Add `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` |
+| 28  | `any` types used in catch blocks throughout                                   | `auth.service.ts`                    | Replace with `unknown` and proper type narrowing                    |
