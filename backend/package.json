@@ -24,7 +24,7 @@
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.12.1",
-    "nodemailer": "^8.0.7",
+    "nodemailer": "^9.0.5",
     "nodemon": "^3.1.14",
     "pino": "^10.3.1",
     "zod": "^3.24.1"
@@ -47,5 +47,9 @@
     "ts-node": "^10.9.2",
     "tsx": "^4.20.5",
     "typescript": "^5.9.3"
+  },
+  "overrides": {
+    "tar": "^7.5.7",
+    "esbuild": "^0.28.1"
   }
 }
