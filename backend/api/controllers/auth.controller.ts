@@ -119,8 +119,13 @@ export const authController = {
     }
   },
 
-  async logout(_req: Request, res: Response, next: NextFunction) {
+  async logout(req: Request, res: Response, next: NextFunction) {
     try {
+      const refreshToken = req.cookies?.[REFRESH_COOKIE] as string | undefined;
+      if (refreshToken) {
+        authService.logout(refreshToken);
+      }
+
       const opts = getCookieOptions();
       res.clearCookie(ACCESS_COOKIE, opts);
       res.clearCookie(REFRESH_COOKIE, opts);

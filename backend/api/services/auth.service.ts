@@ -5,6 +5,7 @@ import {userRepository} from '../repositories/user.repository';
 import {adminRepository} from '../repositories/admin.repository';
 import {ApiError} from '../utils/error';
 import {emailService} from './email.service';
+import {blocklistService} from './blocklist.service';
 import {verificationCodeEmailTemplate} from '../templates/verificationCodeEmail';
 import {resetPasswordEmailTemplate} from '../templates/resetPasswordEmail';
 
@@ -273,6 +274,10 @@ export const authService = {
 
   async refreshAccessToken(refreshToken: string) {
     try {
+      if (blocklistService.isRevoked(refreshToken)) {
+        throw new ApiError(401, 'UNAUTHORIZED', 'Token revoked');
+      }
+
       const payload = jwt.verify(
         refreshToken,
         env.JWT_REFRESH_SECRET
@@ -308,6 +313,8 @@ export const authService = {
         throw new ApiError(403, 'NOT_VERIFIED', 'Email not verified');
       }
 
+      blocklistService.revoke(refreshToken);
+
       const accessToken = jwt.sign(
         {userId: account.id, type: userType},
         env.JWT_SECRET,
@@ -318,5 +325,9 @@ export const authService = {
     } catch {
       throw new ApiError(401, 'UNAUTHORIZED', 'Invalid token');
     }
+  },
+
+  logout(refreshToken: string) {
+    blocklistService.revoke(refreshToken);
   }
 };
