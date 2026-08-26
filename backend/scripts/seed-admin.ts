@@ -18,7 +18,7 @@ const ADMIN_LAST_NAME = process.env.SEED_ADMIN_LAST_NAME || 'User';
 
 async function seed() {
   try {
-    await mongoose.connect(MONGO_URI);
+    await mongoose.connect(MONGO_URI!);
     console.log('Connected to MongoDB');
 
     const existing = await AdminModel.findOne({email: ADMIN_EMAIL});
