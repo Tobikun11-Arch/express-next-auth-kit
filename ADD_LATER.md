@@ -1,1 +1,0 @@
-PROJECT GC backend best practices

@@ -4,6 +4,10 @@ A production-ready full-stack boilerplate combining **Next.js 16** and **Express
 
 ---
 
+> **Quick Setup:** Want to customize everything in one shot? Open **[CUSTOMIZE.md](./docs/CUSTOMIZE.md)**, fill in your project values (database, secrets, branding, etc.), so your AI agent can update all files for you automatically.
+
+---
+
 ## Features
 
 - **Full Auth Flow** — Sign up, sign in, forgot password, email verification, and password reset
