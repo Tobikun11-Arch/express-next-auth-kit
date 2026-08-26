@@ -51,6 +51,10 @@ export function getFriendlyErrorMessage(
         return 'Email already exists.';
       case 'PHONE_EXISTS':
         return 'Phone number already exists.';
+      case 'USERNAME_EXISTS':
+        return 'Username already taken.';
+      case 'ALREADY_VERIFIED':
+        return 'Your email is already verified. Please sign in.';
       case 'INVALID_CREDENTIALS':
         return 'Invalid email/phone number or password.';
       case 'NOT_VERIFIED':
@@ -61,6 +65,8 @@ export function getFriendlyErrorMessage(
         return 'Verification code expired or invalid. Please request a new code.';
       case 'USER_NOT_FOUND':
         return 'User not found.';
+      case 'ACCOUNT_EXISTS':
+        return 'An account already exists with this information.';
       case 'NETWORK_ERROR':
         return 'Network error. Please check your connection and try again.';
       default:
@@ -78,7 +84,7 @@ export function getFriendlyErrorMessage(
       return 'Please enter a valid email address.';
     }
 
-    return error.message || fallback;
+    return fallback;
   }
 
   if (hasStringMessage(error)) {
@@ -90,7 +96,7 @@ export function getFriendlyErrorMessage(
     if (msg.includes('at least 8 character')) {
       return 'Password must be at least 8 characters.';
     }
-    return msg;
+    return fallback;
   }
 
   return fallback;

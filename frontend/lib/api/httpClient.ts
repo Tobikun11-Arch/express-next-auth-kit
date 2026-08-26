@@ -6,7 +6,7 @@ import axios, {
 } from 'axios';
 import type {ApiErrorPayload, NormalizedApiError} from './types';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? '';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
 const resolvedBaseUrl = API_BASE_URL.length > 0 ? API_BASE_URL : undefined;
 
 let refreshPromise: Promise<void> | null = null;
