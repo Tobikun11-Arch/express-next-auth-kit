@@ -7,6 +7,7 @@
     "build": "tsc",
     "dev": "tsx watch index.ts",
     "start": "node dist/index.js",
+    "seed:admin": "tsx scripts/seed-admin.ts",
     "lint": "eslint .",
     "test": "jest"
   },
