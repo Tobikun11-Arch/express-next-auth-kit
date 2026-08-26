@@ -127,12 +127,8 @@ export const authService = {
 
   async resendVerification(email: string) {
     const user = await userRepository.findByEmail(email);
-    if (!user) {
-      throw new ApiError(404, 'USER_NOT_FOUND', 'User not found');
-    }
-
-    if (user.isVerified) {
-      throw new ApiError(400, 'ALREADY_VERIFIED', 'Email already verified');
+    if (!user || user.isVerified) {
+      return;
     }
 
     const verificationCode = generateVerificationCode();
