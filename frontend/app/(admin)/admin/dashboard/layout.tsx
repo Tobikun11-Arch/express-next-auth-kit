@@ -62,8 +62,8 @@ export default function AdminDashboardLayout({
 
   return (
     <div className="flex h-screen cursor-default bg-gray-50">
-      <aside className="hidden md:flex flex-col w-64 min-h-screen bg-[#1a1a2e] shadow-xl z-40">
-        <div className="flex items-center justify-center py-6 px-4 border-b border-[#2a2a4a]">
+      <aside className="hidden md:flex flex-col w-64 min-h-screen bg-black shadow-xl z-40">
+        <div className="flex items-center justify-center py-6 px-4 border-b border-gray-800">
           <Image
             src="/assets/logo.png"
             alt="App logo"
@@ -75,7 +75,7 @@ export default function AdminDashboardLayout({
         </div>
 
         <div className="px-4 pt-4 pb-2">
-          <span className="text-[10px] font-bold tracking-widest uppercase text-[#7a7aaa]">
+          <span className="text-[10px] font-bold tracking-widest uppercase text-gray-500">
             Admin Panel
           </span>
         </div>
@@ -94,8 +94,8 @@ export default function AdminDashboardLayout({
                   transition-all duration-200
                   ${
                     active
-                      ? 'bg-[#4a5eff] text-white'
-                      : 'text-[#b0b0d0] hover:bg-[#2a2a4a] hover:text-white'
+                      ? 'bg-white text-black'
+                      : 'text-gray-400 hover:bg-gray-800 hover:text-white'
                   }
                 `}
               >
@@ -109,14 +109,14 @@ export default function AdminDashboardLayout({
           })}
         </nav>
 
-        <div className="px-3 pb-5 pt-2 border-t border-[#2a2a4a]">
+        <div className="px-3 pb-5 pt-2 border-t border-gray-800">
           <button
             onClick={handleLogout}
             disabled={logoutMutation.isPending}
             className="
               w-full flex items-center gap-3 px-4 py-3 rounded-xl
               text-sm font-semibold tracking-wide
-              text-[#f08080] hover:bg-[#3a1a1a] hover:text-red-300
+              text-gray-400 hover:bg-gray-800 hover:text-white
               transition-all duration-200
               disabled:opacity-50 disabled:cursor-not-allowed
             "
@@ -134,7 +134,7 @@ export default function AdminDashboardLayout({
       <nav
         className="
           md:hidden fixed bottom-0 left-0 right-0 z-50
-          bg-[#1a1a2e] border-t border-[#2a2a4a]
+          bg-black border-t border-gray-800
           flex items-center justify-around
           px-2 pt-3 pb-[env(safe-area-inset-bottom,10px)]
         "
@@ -154,12 +154,12 @@ export default function AdminDashboardLayout({
               <Icon
                 size={22}
                 className={`transition-colors duration-200 ${
-                  active ? 'text-[#4a5eff]' : 'text-[#5a5a8a]'
+                  active ? 'text-white' : 'text-gray-500'
                 }`}
               />
               <span
                 className={`text-[10px] font-bold leading-none transition-colors duration-200 ${
-                  active ? 'text-[#4a5eff]' : 'text-[#5a5a8a]'
+                  active ? 'text-white' : 'text-gray-500'
                 }`}
               >
                 {label}
@@ -167,7 +167,7 @@ export default function AdminDashboardLayout({
 
               <span
                 className={`
-                  mt-1 h-0.5 w-6 rounded-full bg-[#4a5eff]
+                  mt-1 h-0.5 w-6 rounded-full bg-white
                   transition-all duration-300 ease-out
                   ${active ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}
                 `}

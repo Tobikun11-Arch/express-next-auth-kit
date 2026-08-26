@@ -62,8 +62,8 @@ export default function DashboardLayout({
 
   return (
     <div className="flex h-screen cursor-default bg-gray-50">
-      <aside className="hidden md:flex flex-col w-64 min-h-screen bg-[#2d4a35] shadow-xl z-40">
-        <div className="flex items-center justify-center py-6 px-4 border-b border-[#3a5c44]">
+      <aside className="hidden md:flex flex-col w-64 min-h-screen bg-black shadow-xl z-40">
+        <div className="flex items-center justify-center py-6 px-4 border-b border-gray-800">
           <Image
             src="/assets/logo.png"
             alt="App logo"
@@ -88,8 +88,8 @@ export default function DashboardLayout({
                   transition-all duration-200
                   ${
                     active
-                      ? 'bg-[#4a7c59] text-white'
-                      : 'text-[#b8d4c0] hover:bg-[#3a5c44] hover:text-white'
+                      ? 'bg-white text-black'
+                      : 'text-gray-400 hover:bg-gray-800 hover:text-white'
                   }
                 `}
               >
@@ -103,14 +103,14 @@ export default function DashboardLayout({
           })}
         </nav>
 
-        <div className="px-3 pb-5 pt-2 border-t border-[#3a5c44]">
+        <div className="px-3 pb-5 pt-2 border-t border-gray-800">
           <button
             onClick={handleLogout}
             disabled={logoutMutation.isPending}
             className="
               w-full flex items-center gap-3 px-4 py-3 rounded-xl
               text-sm font-semibold tracking-wide
-              text-[#f08080] hover:bg-[#3a1a1a] hover:text-red-300
+              text-gray-400 hover:bg-gray-800 hover:text-white
               transition-all duration-200
               disabled:opacity-50 disabled:cursor-not-allowed
             "
@@ -128,7 +128,7 @@ export default function DashboardLayout({
       <nav
         className="
           md:hidden fixed bottom-0 left-0 right-0 z-50
-          bg-[#2d4a35] border-t border-[#3a5c44]
+          bg-black border-t border-gray-800
           flex items-center justify-around
           px-2 pt-3 pb-[env(safe-area-inset-bottom,10px)]
         "
@@ -148,12 +148,12 @@ export default function DashboardLayout({
               <Icon
                 size={22}
                 className={`transition-colors duration-200 ${
-                  active ? 'text-[#7ed4a0]' : 'text-[#5a8a6a]'
+                  active ? 'text-white' : 'text-gray-500'
                 }`}
               />
               <span
                 className={`text-[10px] font-bold leading-none transition-colors duration-200 ${
-                  active ? 'text-[#7ed4a0]' : 'text-[#5a8a6a]'
+                  active ? 'text-white' : 'text-gray-500'
                 }`}
               >
                 {label}
@@ -161,7 +161,7 @@ export default function DashboardLayout({
 
               <span
                 className={`
-                  mt-1 h-0.5 w-6 rounded-full bg-[#7ed4a0]
+                  mt-1 h-0.5 w-6 rounded-full bg-white
                   transition-all duration-300 ease-out
                   ${active ? 'opacity-100 scale-100' : 'opacity-0 scale-0'}
                 `}

@@ -134,7 +134,7 @@ export default function VerifyEmailClient() {
 
         <Button
           type="submit"
-          className="w-full bg-[#3c5e45]"
+          className="w-full bg-black"
           size="lg"
           disabled={isSubmitting || !canSubmit}
         >
@@ -163,7 +163,7 @@ export default function VerifyEmailClient() {
         )}
 
         {successMessage && (
-          <div className="rounded-md border border-emerald-600/30 bg-emerald-600/10 px-3 py-2 text-sm text-emerald-700">
+          <div className="rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
             {successMessage}
           </div>
         )}
@@ -175,7 +175,7 @@ export default function VerifyEmailClient() {
             Remember your password?{' '}
             <Link
               href="/sign-in"
-              className="text-[#3c5e45] font-semibold hover:underline"
+              className="text-black font-semibold hover:underline"
             >
               Sign in
             </Link>
@@ -185,7 +185,7 @@ export default function VerifyEmailClient() {
             Already verified?{' '}
             <Link
               href="/sign-in"
-              className="text-[#3c5e45] font-semibold hover:underline"
+              className="text-black font-semibold hover:underline"
             >
               Sign in
             </Link>

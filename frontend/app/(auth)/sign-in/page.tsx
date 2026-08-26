@@ -103,7 +103,7 @@ export default function SignInPage() {
 
         <Button
           type="submit"
-          className="w-full bg-[#3c5e45]"
+          className="w-full bg-black"
           size="lg"
           disabled={isSubmitting}
         >
@@ -122,7 +122,7 @@ export default function SignInPage() {
         Don&apos;t have an account?{' '}
         <Link
           href="/sign-up"
-          className="text-[#3c5e45] font-semibold hover:underline"
+          className="text-black font-semibold hover:underline"
         >
           Sign up
         </Link>

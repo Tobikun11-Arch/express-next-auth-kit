@@ -104,7 +104,7 @@ export default function ResetPasswordPage() {
 
         <Button
           type="submit"
-          className="w-full bg-[#3c5e45]"
+          className="w-full bg-black"
           size="lg"
           disabled={isSubmitting}
         >
@@ -123,7 +123,7 @@ export default function ResetPasswordPage() {
         Remember your password?{' '}
         <Link
           href="/sign-in"
-          className="text-[#3c5e45] font-semibold hover:underline"
+          className="text-black font-semibold hover:underline"
         >
           Sign in
         </Link>
