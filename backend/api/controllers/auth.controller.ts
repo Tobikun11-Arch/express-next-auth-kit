@@ -2,6 +2,7 @@ import {Request, Response, NextFunction} from 'express';
 import {CookieOptions} from 'express';
 import {authService} from '../services/auth.service';
 import {ApiError} from '../utils/error';
+import {env} from '../config/env';
 
 const ACCESS_COOKIE = 'dc_access_token';
 const REFRESH_COOKIE = 'dc_refresh_token';
@@ -9,8 +10,8 @@ const REFRESH_COOKIE = 'dc_refresh_token';
 function getCookieOptions(): CookieOptions {
   return {
     httpOnly: true,
-    secure: process.env.COOKIE_SECURE === 'true',
-    sameSite: process.env.COOKIE_SAMESITE as 'strict' | 'lax' | 'none',
+    secure: env.COOKIE_SECURE === 'true',
+    sameSite: env.COOKIE_SAMESITE ?? 'lax',
     path: '/'
   };
 }
@@ -108,6 +109,10 @@ export const authController = {
       res.cookie(ACCESS_COOKIE, result.accessToken, {
         ...opts,
         maxAge: 15 * 60 * 1000
+      });
+      res.cookie(REFRESH_COOKIE, result.refreshToken, {
+        ...opts,
+        maxAge: 7 * 24 * 60 * 60 * 1000
       });
 
       res.status(200).json({message: 'Refreshed'});

@@ -14,14 +14,17 @@ const index_1 = __importDefault(require("./api/routes/index"));
 const errorHandler_1 = require("./api/middleware/errorHandler");
 const sanitize_1 = require("./api/middleware/sanitize");
 const app = (0, express_1.default)();
+const allowedOrigins = env_1.env.CORS_ORIGINS
+    ? env_1.env.CORS_ORIGINS.split(',').map(o => o.trim().replace(/\/+$/, ''))
+    : ['http://localhost:3000'];
 app.use((0, helmet_1.default)());
 app.use((0, cors_1.default)({
-    origin: ['http://localhost:3000', 'your-production-domain.com'],
+    origin: allowedOrigins,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
 }));
-app.use(express_1.default.json());
+app.use(express_1.default.json({ limit: '10kb' }));
 app.use((0, cookie_parser_1.default)());
 app.use(sanitize_1.sanitize);
 app.use('/api', index_1.default);

@@ -80,6 +80,22 @@ export function getFriendlyErrorMessage(
       return 'Password must be at least 8 characters.';
     }
 
+    if (error.message.includes('uppercase letter')) {
+      return 'Password must contain at least one uppercase letter.';
+    }
+
+    if (error.message.includes('lowercase letter')) {
+      return 'Password must contain at least one lowercase letter.';
+    }
+
+    if (error.message.includes('at least one digit')) {
+      return 'Password must contain at least one digit.';
+    }
+
+    if (error.message.includes('special character')) {
+      return 'Password must contain at least one special character.';
+    }
+
     if (error.message.toLowerCase().includes('invalid email')) {
       return 'Please enter a valid email address.';
     }
@@ -96,6 +112,23 @@ export function getFriendlyErrorMessage(
     if (msg.includes('at least 8 character')) {
       return 'Password must be at least 8 characters.';
     }
+
+    if (msg.includes('uppercase letter')) {
+      return 'Password must contain at least one uppercase letter.';
+    }
+
+    if (msg.includes('lowercase letter')) {
+      return 'Password must contain at least one lowercase letter.';
+    }
+
+    if (msg.includes('at least one digit')) {
+      return 'Password must contain at least one digit.';
+    }
+
+    if (msg.includes('special character')) {
+      return 'Password must contain at least one special character.';
+    }
+
     return fallback;
   }
 

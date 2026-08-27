@@ -10,10 +10,14 @@ import {sanitize} from './api/middleware/sanitize';
 
 const app = express();
 
+const allowedOrigins = env.CORS_ORIGINS
+  ? env.CORS_ORIGINS.split(',').map(o => o.trim().replace(/\/+$/, ''))
+  : ['http://localhost:3000'];
+
 app.use(helmet());
 app.use(
   cors({
-    origin: ['http://localhost:3000', 'https://express-next-auth-kit.vercel.app/'],
+    origin: allowedOrigins,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']

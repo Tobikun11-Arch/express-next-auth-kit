@@ -17,7 +17,10 @@ const envSchema = zod_1.z.object({
     SMTP_PORT: zod_1.z.string().optional(),
     SMTP_USER: zod_1.z.string().optional(),
     SMTP_PASS: zod_1.z.string().optional(),
-    SMTP_FROM: zod_1.z.string().optional()
+    SMTP_FROM: zod_1.z.string().optional(),
+    COOKIE_SECURE: zod_1.z.string().optional(),
+    COOKIE_SAMESITE: zod_1.z.enum(['strict', 'lax', 'none']).optional(),
+    CORS_ORIGINS: zod_1.z.string().optional()
 });
 const parsed = envSchema.safeParse(process.env);
 if (!parsed.success) {

@@ -17,7 +17,9 @@ function createBaseUserSchema() {
         username: { type: String, unique: true, sparse: true },
         isVerified: { type: Boolean, default: false },
         verificationCode: { type: String, default: null },
-        verificationExpiry: { type: Date, default: null }
+        verificationExpiry: { type: Date, default: null },
+        resetCode: { type: String, default: null },
+        resetExpiry: { type: Date, default: null }
     }, { timestamps: true });
     return schema;
 }

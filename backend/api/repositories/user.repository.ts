@@ -20,6 +20,9 @@ export const userRepository = {
     >
   ) => UserModel.updateOne({_id: userId}, data).exec(),
 
+  updatePassword: (userId: string, passwordHash: string) =>
+    UserModel.updateOne({_id: userId}, {passwordHash}).exec(),
+
   setVerificationCode: (email: string, code: string, expiry: Date) =>
     UserModel.updateOne(
       {email: email.toLowerCase()},
@@ -30,6 +33,18 @@ export const userRepository = {
     UserModel.updateOne(
       {email: email.toLowerCase()},
       {verificationCode: null, verificationExpiry: null}
+    ).exec(),
+
+  setResetCode: (email: string, code: string, expiry: Date) =>
+    UserModel.updateOne(
+      {email: email.toLowerCase()},
+      {resetCode: code, resetExpiry: expiry}
+    ).exec(),
+
+  clearResetCode: (email: string) =>
+    UserModel.updateOne(
+      {email: email.toLowerCase()},
+      {resetCode: null, resetExpiry: null}
     ).exec(),
 
   markVerified: (email: string) =>

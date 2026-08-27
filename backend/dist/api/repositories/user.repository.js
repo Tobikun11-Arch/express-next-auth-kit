@@ -8,7 +8,10 @@ exports.userRepository = {
     listAll: () => User_model_1.UserModel.find({}).exec(),
     create: (data) => User_model_1.UserModel.create(data),
     updateProfile: (userId, data) => User_model_1.UserModel.updateOne({ _id: userId }, data).exec(),
+    updatePassword: (userId, passwordHash) => User_model_1.UserModel.updateOne({ _id: userId }, { passwordHash }).exec(),
     setVerificationCode: (email, code, expiry) => User_model_1.UserModel.updateOne({ email: email.toLowerCase() }, { verificationCode: code, verificationExpiry: expiry }).exec(),
     clearVerificationCode: (email) => User_model_1.UserModel.updateOne({ email: email.toLowerCase() }, { verificationCode: null, verificationExpiry: null }).exec(),
+    setResetCode: (email, code, expiry) => User_model_1.UserModel.updateOne({ email: email.toLowerCase() }, { resetCode: code, resetExpiry: expiry }).exec(),
+    clearResetCode: (email) => User_model_1.UserModel.updateOne({ email: email.toLowerCase() }, { resetCode: null, resetExpiry: null }).exec(),
     markVerified: (email) => User_model_1.UserModel.updateOne({ email: email.toLowerCase() }, { isVerified: true, verificationCode: null, verificationExpiry: null }).exec()
 };

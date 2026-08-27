@@ -9,6 +9,8 @@ export interface BaseUserDocument extends mongoose.Document {
   isVerified: boolean;
   verificationCode?: string | null;
   verificationExpiry?: Date | null;
+  resetCode?: string | null;
+  resetExpiry?: Date | null;
 }
 
 export function createBaseUserSchema<T extends BaseUserDocument>() {
@@ -27,7 +29,9 @@ export function createBaseUserSchema<T extends BaseUserDocument>() {
       username: {type: String, unique: true, sparse: true},
       isVerified: {type: Boolean, default: false},
       verificationCode: {type: String, default: null},
-      verificationExpiry: {type: Date, default: null}
+      verificationExpiry: {type: Date, default: null},
+      resetCode: {type: String, default: null},
+      resetExpiry: {type: Date, default: null}
     },
     {timestamps: true}
   );

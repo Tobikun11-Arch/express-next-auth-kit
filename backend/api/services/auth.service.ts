@@ -182,7 +182,7 @@ export const authService = {
     const resetCode = generateVerificationCode();
     const resetExpiry = getVerificationExpiry(10);
 
-    await userRepository.setVerificationCode(email, resetCode, resetExpiry);
+    await userRepository.setResetCode(email, resetCode, resetExpiry);
 
     await authService.sendResetPasswordCodeEmail({
       email,
@@ -194,12 +194,12 @@ export const authService = {
   async verifyResetCode(email: string, code: string) {
     const user = await userRepository.findByEmail(email);
 
-    if (!user || !user.verificationCode || !user.verificationExpiry) {
+    if (!user || !user.resetCode || !user.resetExpiry) {
       throw new ApiError(400, 'INVALID_CODE', 'Invalid or expired reset code');
     }
 
-    const codeMatches = user.verificationCode === code;
-    const notExpired = user.verificationExpiry > new Date();
+    const codeMatches = user.resetCode === code;
+    const notExpired = user.resetExpiry > new Date();
 
     if (!codeMatches || !notExpired) {
       throw new ApiError(400, 'EXPIRED_CODE', 'Reset code expired or invalid');
@@ -209,12 +209,12 @@ export const authService = {
   async resetPassword(email: string, code: string, newPassword: string) {
     const user = await userRepository.findByEmail(email);
 
-    if (!user || !user.verificationCode || !user.verificationExpiry) {
+    if (!user || !user.resetCode || !user.resetExpiry) {
       throw new ApiError(400, 'INVALID_CODE', 'Invalid or expired reset code');
     }
 
-    const codeMatches = user.verificationCode === code;
-    const notExpired = user.verificationExpiry > new Date();
+    const codeMatches = user.resetCode === code;
+    const notExpired = user.resetExpiry > new Date();
 
     if (!codeMatches || !notExpired) {
       throw new ApiError(400, 'EXPIRED_CODE', 'Reset code expired or invalid');
@@ -222,8 +222,8 @@ export const authService = {
 
     const passwordHash = await bcrypt.hash(newPassword, 10);
 
-    await userRepository.clearVerificationCode(email);
-    await userRepository.updateProfile(user.id, {passwordHash} as any);
+    await userRepository.updatePassword(user.id, passwordHash);
+    await userRepository.clearResetCode(email);
   },
 
   async login(email: string, password: string) {
@@ -321,7 +321,13 @@ export const authService = {
         {expiresIn: '15m'}
       );
 
-      return {accessToken};
+      const newRefreshToken = jwt.sign(
+        {userId: account.id, type: userType},
+        env.JWT_REFRESH_SECRET,
+        {expiresIn: '7d'}
+      );
+
+      return {accessToken, refreshToken: newRefreshToken};
     } catch {
       throw new ApiError(401, 'UNAUTHORIZED', 'Invalid token');
     }
