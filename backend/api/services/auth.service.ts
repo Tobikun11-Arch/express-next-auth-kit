@@ -19,7 +19,7 @@ function getVerificationExpiry(minutes: number) {
 
 type RefreshTokenPayload = {
   userId: string;
-  type?: 'user' | 'admin';
+  type: 'user' | 'admin';
 };
 
 export const authService = {
@@ -68,33 +68,19 @@ export const authService = {
       });
 
       return {id: user.id, email: user.email};
-    } catch (err: any) {
-      const code = err?.code;
-      const rawMessage = String(err?.message ?? '');
-      const keyPattern = err?.keyPattern;
-
+    } catch (err: unknown) {
       if (
-        code === 11000 ||
-        rawMessage.toLowerCase().includes('e11000') ||
-        rawMessage.toLowerCase().includes('duplicate key')
+        err instanceof Error &&
+        'code' in err &&
+        (err as {code: number}).code === 11000
       ) {
-        const isUsername = !!(
-          keyPattern &&
-          typeof keyPattern === 'object' &&
-          'username' in keyPattern
-        );
+        const keyValue = (err as {keyValue?: Record<string, string>}).keyValue;
 
-        const isEmail = !!(
-          keyPattern &&
-          typeof keyPattern === 'object' &&
-          'email' in keyPattern
-        );
-
-        if (isUsername || rawMessage.toLowerCase().includes('username')) {
+        if (keyValue?.username) {
           throw new ApiError(409, 'USERNAME_EXISTS', 'username already exists');
         }
 
-        if (isEmail || rawMessage.toLowerCase().includes('email')) {
+        if (keyValue?.email) {
           throw new ApiError(409, 'EMAIL_EXISTS', 'Email already exists');
         }
 
@@ -283,29 +269,11 @@ export const authService = {
         env.JWT_REFRESH_SECRET
       ) as RefreshTokenPayload;
 
-      const tokenType = payload.type;
+      const account = await (payload.type === 'user'
+        ? userRepository.findById(payload.userId)
+        : adminRepository.findById(payload.userId));
 
-      let userType: 'user' | 'admin' | null = null;
-      let account: any = null;
-
-      if (tokenType) {
-        userType = tokenType;
-        account = await (tokenType === 'user'
-          ? userRepository.findById(payload.userId)
-          : tokenType === 'admin'
-            ? adminRepository.findById(payload.userId)
-            : null);
-      } else {
-        const [user, admin] = await Promise.all([
-          userRepository.findById(payload.userId),
-          adminRepository.findById(payload.userId)
-        ]);
-
-        account = user || admin;
-        userType = user ? 'user' : admin ? 'admin' : null;
-      }
-
-      if (!account || !userType) {
+      if (!account) {
         throw new ApiError(401, 'UNAUTHORIZED', 'Invalid token');
       }
 
@@ -316,13 +284,13 @@ export const authService = {
       blocklistService.revoke(refreshToken);
 
       const accessToken = jwt.sign(
-        {userId: account.id, type: userType},
+        {userId: account.id, type: payload.type},
         env.JWT_SECRET,
         {expiresIn: '15m'}
       );
 
       const newRefreshToken = jwt.sign(
-        {userId: account.id, type: userType},
+        {userId: account.id, type: payload.type},
         env.JWT_REFRESH_SECRET,
         {expiresIn: '7d'}
       );

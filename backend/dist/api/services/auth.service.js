@@ -56,22 +56,14 @@ exports.authService = {
             return { id: user.id, email: user.email };
         }
         catch (err) {
-            const code = err?.code;
-            const rawMessage = String(err?.message ?? '');
-            const keyPattern = err?.keyPattern;
-            if (code === 11000 ||
-                rawMessage.toLowerCase().includes('e11000') ||
-                rawMessage.toLowerCase().includes('duplicate key')) {
-                const isUsername = !!(keyPattern &&
-                    typeof keyPattern === 'object' &&
-                    'username' in keyPattern);
-                const isEmail = !!(keyPattern &&
-                    typeof keyPattern === 'object' &&
-                    'email' in keyPattern);
-                if (isUsername || rawMessage.toLowerCase().includes('username')) {
+            if (err instanceof Error &&
+                'code' in err &&
+                err.code === 11000) {
+                const keyValue = err.keyValue;
+                if (keyValue?.username) {
                     throw new error_1.ApiError(409, 'USERNAME_EXISTS', 'username already exists');
                 }
-                if (isEmail || rawMessage.toLowerCase().includes('email')) {
+                if (keyValue?.email) {
                     throw new error_1.ApiError(409, 'EMAIL_EXISTS', 'Email already exists');
                 }
                 throw new error_1.ApiError(409, 'ACCOUNT_EXISTS', 'Account already exists');
@@ -190,34 +182,18 @@ exports.authService = {
                 throw new error_1.ApiError(401, 'UNAUTHORIZED', 'Token revoked');
             }
             const payload = jsonwebtoken_1.default.verify(refreshToken, env_1.env.JWT_REFRESH_SECRET);
-            const tokenType = payload.type;
-            let userType = null;
-            let account = null;
-            if (tokenType) {
-                userType = tokenType;
-                account = await (tokenType === 'user'
-                    ? user_repository_1.userRepository.findById(payload.userId)
-                    : tokenType === 'admin'
-                        ? admin_repository_1.adminRepository.findById(payload.userId)
-                        : null);
-            }
-            else {
-                const [user, admin] = await Promise.all([
-                    user_repository_1.userRepository.findById(payload.userId),
-                    admin_repository_1.adminRepository.findById(payload.userId)
-                ]);
-                account = user || admin;
-                userType = user ? 'user' : admin ? 'admin' : null;
-            }
-            if (!account || !userType) {
+            const account = await (payload.type === 'user'
+                ? user_repository_1.userRepository.findById(payload.userId)
+                : admin_repository_1.adminRepository.findById(payload.userId));
+            if (!account) {
                 throw new error_1.ApiError(401, 'UNAUTHORIZED', 'Invalid token');
             }
             if (!account.isVerified) {
                 throw new error_1.ApiError(403, 'NOT_VERIFIED', 'Email not verified');
             }
             blocklist_service_1.blocklistService.revoke(refreshToken);
-            const accessToken = jsonwebtoken_1.default.sign({ userId: account.id, type: userType }, env_1.env.JWT_SECRET, { expiresIn: '15m' });
-            const newRefreshToken = jsonwebtoken_1.default.sign({ userId: account.id, type: userType }, env_1.env.JWT_REFRESH_SECRET, { expiresIn: '7d' });
+            const accessToken = jsonwebtoken_1.default.sign({ userId: account.id, type: payload.type }, env_1.env.JWT_SECRET, { expiresIn: '15m' });
+            const newRefreshToken = jsonwebtoken_1.default.sign({ userId: account.id, type: payload.type }, env_1.env.JWT_REFRESH_SECRET, { expiresIn: '7d' });
             return { accessToken, refreshToken: newRefreshToken };
         }
         catch {
