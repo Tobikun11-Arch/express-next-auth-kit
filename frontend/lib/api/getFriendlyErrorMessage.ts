@@ -67,6 +67,8 @@ export function getFriendlyErrorMessage(
         return 'User not found.';
       case 'ACCOUNT_EXISTS':
         return 'An account already exists with this information.';
+      case 'RATE_LIMIT_EXCEEDED':
+        return 'Too many requests. Please wait a moment and try again.';
       case 'NETWORK_ERROR':
         return 'Network error. Please check your connection and try again.';
       default:
