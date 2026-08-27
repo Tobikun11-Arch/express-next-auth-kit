@@ -18,7 +18,6 @@ A production-ready full-stack boilerplate combining **Next.js 16** and **Express
 - **Rate Limiting & Security** — Helmet, CORS, express-rate-limit, body size limits, and input sanitization
 - **Validation** — Zod schemas with DTO pattern on the backend
 - **Structured Logging** — Pino logger integration
-- **Testing** — Jest + Supertest setup ready to go
 - **Modern Frontend** — Next.js App Router with shadcn/ui, TailwindCSS v4, and TanStack Query
 - **Friendly Error Messages** — Raw backend errors are mapped to user-friendly messages on the frontend
 
@@ -72,7 +71,6 @@ backend/
 │   └── utils/                  # Error utilities
 ├── scripts/
 │   └── seed-admin.ts           # Admin seed script
-└── tests/                      # Jest + Supertest integration tests
 ```
 
 ---
@@ -233,7 +231,6 @@ Admin users are redirected to `/admin/dashboard`. Regular users go to `/dashboar
 | Helmet | HTTP security headers |
 | express-rate-limit | API rate limiting |
 | Pino | Structured logging |
-| Jest + Supertest | Testing |
 
 ---
 
