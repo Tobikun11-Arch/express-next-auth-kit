@@ -9,7 +9,8 @@ import {
   refreshDto,
   forgotPasswordDto, // add
   resetPasswordDto, // add
-  resendResetCodeDto // add
+  resendResetCodeDto, // add
+  changePasswordDto // add
 } from '../dtos/auth.dto';
 import {authLimiter} from '../middleware/rateLimit';
 import {requireAuth} from '../middleware/auth';
@@ -66,6 +67,12 @@ router.post(
   authController.resetPassword
 );
 
-router.get('/csrf', issueCsrfToken);
+router.put(
+  '/password',
+  authLimiter,
+  requireAuth,
+  validate(changePasswordDto),
+  authController.changePassword
+);
 
 export default router;

@@ -104,3 +104,14 @@ export async function getMe() {
   const res = await httpClient.get<MeResponse>('/auth/me');
   return res.data;
 }
+
+export async function changePassword(params: {
+  currentPassword: string;
+  newPassword: string;
+}) {
+  const res = await httpClient.put<{message: string}>(
+    '/auth/password',
+    params
+  );
+  return res.data;
+}

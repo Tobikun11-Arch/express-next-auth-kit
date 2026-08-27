@@ -8,7 +8,7 @@ Full-stack auth boilerplate — Next.js 16 frontend + Express.js backend with JW
 
 - **Frontend:** Next.js 16 App Router, React 19, TypeScript 5, TailwindCSS v4, shadcn/ui, TanStack Query v5, Axios
 - **Backend:** Express.js, Mongoose (MongoDB), jsonwebtoken, bcrypt, Zod, Nodemailer, Pino
-- **Testing:** Jest + Supertest (setup exists, tests currently commented out)
+- **Testing:** Jest + Supertest tooling is available; no test suite is included in this repository
 - **Runtime:** Node.js 18+
 
 ## Sub-Agents

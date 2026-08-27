@@ -6,14 +6,12 @@ import {ErrorCodes} from '../constants/errorCodes';
 import {env} from '../config/env';
 import {ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE} from '../constants/cookies';
 
-function getCookieOptions(): CookieOptions {
-  return {
-    httpOnly: true,
-    secure: env.COOKIE_SECURE === 'true',
-    sameSite: env.COOKIE_SAMESITE ?? 'lax',
-    path: '/'
-  };
-}
+const COOKIE_OPTIONS: CookieOptions = {
+  httpOnly: true,
+  secure: env.COOKIE_SECURE === 'true',
+  sameSite: env.COOKIE_SAMESITE ?? 'lax',
+  path: '/'
+};
 
 export const authController = {
   async me(req: Request, res: Response, next: NextFunction) {
@@ -69,7 +67,7 @@ export const authController = {
       const {accessToken, refreshToken, user, userType} =
         await authService.login(req.body.email, req.body.password);
 
-      const opts = getCookieOptions();
+      const opts = COOKIE_OPTIONS;
 
       res.cookie(ACCESS_TOKEN_COOKIE, accessToken, {
         ...opts,
@@ -104,7 +102,7 @@ export const authController = {
 
       const result = await authService.refreshAccessToken(refreshToken);
 
-      const opts = getCookieOptions();
+      const opts = COOKIE_OPTIONS;
       res.cookie(ACCESS_TOKEN_COOKIE, result.accessToken, {
         ...opts,
         maxAge: 15 * 60 * 1000
@@ -116,7 +114,7 @@ export const authController = {
 
       res.status(200).json({message: 'Refreshed'});
     } catch (error) {
-      const opts = getCookieOptions();
+      const opts = COOKIE_OPTIONS;
       res.clearCookie(ACCESS_TOKEN_COOKIE, opts);
       res.clearCookie(REFRESH_TOKEN_COOKIE, opts);
       next(error);
@@ -130,7 +128,7 @@ export const authController = {
         authService.logout(refreshToken);
       }
 
-      const opts = getCookieOptions();
+      const opts = COOKIE_OPTIONS;
       res.clearCookie(ACCESS_TOKEN_COOKIE, opts);
       res.clearCookie(REFRESH_TOKEN_COOKIE, opts);
       res.status(200).json({message: 'Logged out'});
@@ -176,6 +174,25 @@ export const authController = {
         req.body.newPassword
       );
       res.status(200).json({message: 'Password reset successfully'});
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async changePassword(req: Request, res: Response, next: NextFunction) {
+    try {
+      if (!req.auth) {
+        throw new ApiError(401, ErrorCodes.UNAUTHORIZED, 'Not authenticated');
+      }
+
+      await authService.changePassword(
+        req.auth.userId,
+        req.auth.type ?? 'user',
+        req.body.currentPassword,
+        req.body.newPassword
+      );
+
+      res.status(200).json({message: 'Password changed successfully'});
     } catch (error) {
       next(error);
     }

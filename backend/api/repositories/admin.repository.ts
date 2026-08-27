@@ -11,5 +11,8 @@ export const adminRepository = {
 
   findById: (id: string) => AdminModel.findById(id).exec(),
 
+  updatePassword: (userId: string, passwordHash: string) =>
+    AdminModel.updateOne({_id: userId}, {passwordHash}).exec(),
+
   create: (data: Partial<AdminDocument>) => AdminModel.create(data)
 };

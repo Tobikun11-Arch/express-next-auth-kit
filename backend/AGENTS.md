@@ -13,7 +13,7 @@ npm run build        # Compile TypeScript
 npm run start        # Start production server
 npm run seed:admin   # Seed admin account
 npm run lint         # ESLint
-npm test             # Jest tests (currently commented out)
+npm test             # Jest (no test suite included)
 ```
 
 ## Architecture
@@ -68,6 +68,5 @@ All API errors must follow this shape (enforced in `api/middleware/errorHandler.
 
 ## Testing
 
-- Tests in `backend/tests/` using Jest + Supertest
-- **Note:** Tests are currently commented out — uncomment and fix before relying on them
-- Test API error responses against the error shape above
+- Jest + Supertest tooling is available, but no test suite is included in this repository
+- When adding tests, place them in `backend/tests/` and assert against the error shape above

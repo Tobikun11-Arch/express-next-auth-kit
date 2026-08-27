@@ -8,6 +8,7 @@ import {errorHandler} from './api/middleware/errorHandler';
 import {sanitize} from './api/middleware/sanitize';
 import {requestLogger} from './api/middleware/requestLogger';
 import {csrfProtection} from './api/middleware/csrf';
+import {httpsRedirect} from './api/middleware/httpsRedirect';
 
 const app = express();
 
@@ -16,6 +17,7 @@ const allowedOrigins = env.CORS_ORIGINS
   : ['http://localhost:3000'];
 
 app.use(helmet());
+app.use(httpsRedirect);
 app.use(
   cors({
     origin: allowedOrigins,

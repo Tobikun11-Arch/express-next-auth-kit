@@ -214,6 +214,32 @@ export const authService = {
     await userRepository.clearResetCode(email);
   },
 
+  async changePassword(
+    userId: string,
+    type: 'user' | 'admin',
+    currentPassword: string,
+    newPassword: string
+  ) {
+    const repository = type === 'user' ? userRepository : adminRepository;
+    const account = await repository.findById(userId);
+
+    if (!account) {
+      throw new ApiError(404, ErrorCodes.USER_NOT_FOUND, 'User not found');
+    }
+
+    const matches = await bcrypt.compare(currentPassword, account.passwordHash);
+    if (!matches) {
+      throw new ApiError(
+        401,
+        ErrorCodes.INVALID_CREDENTIALS,
+        'Current password is incorrect'
+      );
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    await repository.updatePassword(userId, passwordHash);
+  },
+
   async login(email: string, password: string) {
     const identifier = email;
     const [user, admin] = await Promise.all([

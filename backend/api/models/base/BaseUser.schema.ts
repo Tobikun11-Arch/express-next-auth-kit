@@ -11,6 +11,8 @@ export interface BaseUserDocument extends mongoose.Document {
   verificationExpiry?: Date | null;
   resetCode?: string | null;
   resetExpiry?: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export function createBaseUserSchema<T extends BaseUserDocument>() {

@@ -51,6 +51,11 @@ export const resendResetCodeDto = z.object({
   email: z.string().email()
 });
 
+export const changePasswordDto = z.object({
+  currentPassword: z.string().min(1),
+  newPassword: passwordSchema
+});
+
 export type RegisterDto = z.infer<typeof registerDto>;
 export type VerifyDto = z.infer<typeof verifyDto>;
 export type ResendVerificationDto = z.infer<typeof resendVerificationDto>;
