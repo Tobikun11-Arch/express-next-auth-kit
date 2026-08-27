@@ -30,7 +30,7 @@ export const resendVerificationDto = z.object({
 
 export const loginDto = z.object({
   email: z.string().min(1),
-  password: passwordSchema
+  password: z.string().min(1)
 });
 
 export const refreshDto = z.object({

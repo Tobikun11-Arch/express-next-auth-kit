@@ -75,4 +75,6 @@ router.put(
   authController.changePassword
 );
 
+router.get('/csrf', issueCsrfToken);
+
 export default router;

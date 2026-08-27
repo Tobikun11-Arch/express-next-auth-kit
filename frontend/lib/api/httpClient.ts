@@ -25,7 +25,7 @@ const refreshClient = axios.create({
 
 async function ensureCsrfToken(): Promise<string | null> {
   if (csrfToken) return csrfToken;
-  const res = await httpClientRef.get<{csrfToken: string}>('/csrf');
+  const res = await httpClientRef.get<{csrfToken: string}>('/auth/csrf');
   csrfToken = res.data.csrfToken;
   return csrfToken;
 }
