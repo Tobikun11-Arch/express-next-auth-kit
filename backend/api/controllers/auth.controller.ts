@@ -2,10 +2,9 @@ import {Request, Response, NextFunction} from 'express';
 import {CookieOptions} from 'express';
 import {authService} from '../services/auth.service';
 import {ApiError} from '../utils/error';
+import {ErrorCodes} from '../constants/errorCodes';
 import {env} from '../config/env';
-
-const ACCESS_COOKIE = 'dc_access_token';
-const REFRESH_COOKIE = 'dc_refresh_token';
+import {ACCESS_TOKEN_COOKIE, REFRESH_TOKEN_COOKIE} from '../constants/cookies';
 
 function getCookieOptions(): CookieOptions {
   return {
@@ -20,11 +19,11 @@ export const authController = {
   async me(req: Request, res: Response, next: NextFunction) {
     try {
       if (!req.auth) {
-        throw new ApiError(401, 'UNAUTHORIZED', 'Not authenticated');
+        throw new ApiError(401, ErrorCodes.UNAUTHORIZED, 'Not authenticated');
       }
 
       if (!req.auth.type) {
-        throw new ApiError(401, 'UNAUTHORIZED', 'Invalid token');
+        throw new ApiError(401, ErrorCodes.UNAUTHORIZED, 'Invalid token');
       }
 
       res.status(200).json({
@@ -72,11 +71,11 @@ export const authController = {
 
       const opts = getCookieOptions();
 
-      res.cookie(ACCESS_COOKIE, accessToken, {
+      res.cookie(ACCESS_TOKEN_COOKIE, accessToken, {
         ...opts,
         maxAge: 15 * 60 * 1000
       });
-      res.cookie(REFRESH_COOKIE, refreshToken, {
+      res.cookie(REFRESH_TOKEN_COOKIE, refreshToken, {
         ...opts,
         maxAge: 7 * 24 * 60 * 60 * 1000
       });
@@ -96,21 +95,21 @@ export const authController = {
   async refresh(req: Request, res: Response, next: NextFunction) {
     try {
       const refreshToken =
-        (req.cookies?.[REFRESH_COOKIE] as string | undefined) ??
+        (req.cookies?.[REFRESH_TOKEN_COOKIE] as string | undefined) ??
         (req.body.refreshToken as string | undefined);
 
       if (!refreshToken) {
-        throw new ApiError(401, 'UNAUTHORIZED', 'Missing refresh token');
+        throw new ApiError(401, ErrorCodes.UNAUTHORIZED, 'Missing refresh token');
       }
 
       const result = await authService.refreshAccessToken(refreshToken);
 
       const opts = getCookieOptions();
-      res.cookie(ACCESS_COOKIE, result.accessToken, {
+      res.cookie(ACCESS_TOKEN_COOKIE, result.accessToken, {
         ...opts,
         maxAge: 15 * 60 * 1000
       });
-      res.cookie(REFRESH_COOKIE, result.refreshToken, {
+      res.cookie(REFRESH_TOKEN_COOKIE, result.refreshToken, {
         ...opts,
         maxAge: 7 * 24 * 60 * 60 * 1000
       });
@@ -118,22 +117,22 @@ export const authController = {
       res.status(200).json({message: 'Refreshed'});
     } catch (error) {
       const opts = getCookieOptions();
-      res.clearCookie(ACCESS_COOKIE, opts);
-      res.clearCookie(REFRESH_COOKIE, opts);
+      res.clearCookie(ACCESS_TOKEN_COOKIE, opts);
+      res.clearCookie(REFRESH_TOKEN_COOKIE, opts);
       next(error);
     }
   },
 
   async logout(req: Request, res: Response, next: NextFunction) {
     try {
-      const refreshToken = req.cookies?.[REFRESH_COOKIE] as string | undefined;
+      const refreshToken = req.cookies?.[REFRESH_TOKEN_COOKIE] as string | undefined;
       if (refreshToken) {
         authService.logout(refreshToken);
       }
 
       const opts = getCookieOptions();
-      res.clearCookie(ACCESS_COOKIE, opts);
-      res.clearCookie(REFRESH_COOKIE, opts);
+      res.clearCookie(ACCESS_TOKEN_COOKIE, opts);
+      res.clearCookie(REFRESH_TOKEN_COOKIE, opts);
       res.status(200).json({message: 'Logged out'});
     } catch (error) {
       next(error);

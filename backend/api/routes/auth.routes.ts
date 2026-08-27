@@ -13,6 +13,7 @@ import {
 } from '../dtos/auth.dto';
 import {authLimiter} from '../middleware/rateLimit';
 import {requireAuth} from '../middleware/auth';
+import {issueCsrfToken} from '../middleware/csrf';
 
 const router = Router();
 
@@ -64,5 +65,7 @@ router.post(
   validate(resetPasswordDto),
   authController.resetPassword
 );
+
+router.get('/csrf', issueCsrfToken);
 
 export default router;

@@ -1,6 +1,7 @@
 import {z} from 'zod';
 import {Request, Response, NextFunction} from 'express';
 import {ApiError} from '../utils/error';
+import {ErrorCodes} from '../constants/errorCodes';
 
 export const validate =
   (schema: z.ZodTypeAny) =>
@@ -15,7 +16,7 @@ export const validate =
       const firstFormError = flattened.formErrors.filter(Boolean)[0];
       const message = firstFieldError ?? firstFormError ?? 'Invalid request';
 
-      return next(new ApiError(400, 'VALIDATION_ERROR', message, flattened));
+      return next(new ApiError(400, ErrorCodes.VALIDATION_ERROR, message, flattened));
     }
 
     next();

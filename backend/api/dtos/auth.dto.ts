@@ -16,7 +16,7 @@ export const registerDto = z.object({
   lastName: z.string().min(1),
   email: z.string().email(),
   password: passwordSchema,
-  username: z.string().min(1).optional()
+  username: z.string().min(1)
 });
 
 export const verifyDto = z.object({

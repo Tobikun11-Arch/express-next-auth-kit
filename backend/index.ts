@@ -1,40 +1,6 @@
-import cors from 'cors';
-import express from 'express';
-import helmet from 'helmet';
-import cookieParser from 'cookie-parser';
+import app from './app';
 import {connectDb} from './api/config/db';
 import {env} from './api/config/env';
-import routes from './api/routes/index';
-import {errorHandler} from './api/middleware/errorHandler';
-import {sanitize} from './api/middleware/sanitize';
-
-const app = express();
-
-const allowedOrigins = env.CORS_ORIGINS
-  ? env.CORS_ORIGINS.split(',').map(o => o.trim().replace(/\/+$/, ''))
-  : ['http://localhost:3000'];
-
-app.use(helmet());
-app.use(
-  cors({
-    origin: allowedOrigins,
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
-  })
-);
-
-app.use(express.json({ limit: '10kb' }));
-app.use(cookieParser());
-app.use(sanitize);
-
-app.use('/api', routes);
-
-app.get('/', async (req, res) => {
-  res.send('test production!');
-});
-
-app.use(errorHandler);
 
 let dbInitPromise: Promise<unknown> | null = null;
 const ensureDb = () => {
@@ -45,8 +11,8 @@ const ensureDb = () => {
 };
 
 export default async function handler(
-  req: express.Request,
-  res: express.Response
+  req: import('express').Request,
+  res: import('express').Response
 ) {
   try {
     await ensureDb();

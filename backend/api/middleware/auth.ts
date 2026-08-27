@@ -2,8 +2,8 @@ import {Request, Response, NextFunction} from 'express';
 import jwt from 'jsonwebtoken';
 import {env} from '../config/env';
 import {ApiError} from '../utils/error';
-
-const ACCESS_COOKIE = 'dc_access_token';
+import {ACCESS_TOKEN_COOKIE} from '../constants/cookies';
+import {ErrorCodes} from '../constants/errorCodes';
 
 export type JwtPayload = {
   userId: string;
@@ -30,11 +30,11 @@ export function requireAuth(req: Request, _res: Response, next: NextFunction) {
   }
 
   if (!token) {
-    token = req.cookies?.[ACCESS_COOKIE] as string | undefined;
+    token = req.cookies?.[ACCESS_TOKEN_COOKIE] as string | undefined;
   }
 
   if (!token) {
-    return next(new ApiError(401, 'UNAUTHORIZED', 'Missing access token'));
+    return next(new ApiError(401, ErrorCodes.UNAUTHORIZED, 'Missing access token'));
   }
 
   try {
@@ -42,17 +42,17 @@ export function requireAuth(req: Request, _res: Response, next: NextFunction) {
     req.auth = payload;
     return next();
   } catch {
-    return next(new ApiError(401, 'UNAUTHORIZED', 'Invalid token'));
+    return next(new ApiError(401, ErrorCodes.UNAUTHORIZED, 'Invalid token'));
   }
 }
 
 export function requireAdmin(req: Request, _res: Response, next: NextFunction) {
   if (!req.auth) {
-    return next(new ApiError(401, 'UNAUTHORIZED', 'Not authenticated'));
+    return next(new ApiError(401, ErrorCodes.UNAUTHORIZED, 'Not authenticated'));
   }
 
   if (req.auth.type !== 'admin') {
-    return next(new ApiError(403, 'FORBIDDEN', 'Admin access required'));
+    return next(new ApiError(403, ErrorCodes.FORBIDDEN, 'Admin access required'));
   }
 
   return next();

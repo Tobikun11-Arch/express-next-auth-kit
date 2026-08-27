@@ -1,6 +1,8 @@
 import nodemailer from 'nodemailer';
+import type {Transporter} from 'nodemailer';
 import {env} from '../config/env';
 import {ApiError} from '../utils/error';
+import {ErrorCodes} from '../constants/errorCodes';
 
 type SendEmailParams = {
   to: string;
@@ -19,7 +21,7 @@ function getSmtpConfig() {
   if (!host || !portRaw || !user || !pass || !from) {
     throw new ApiError(
       500,
-      'SMTP_NOT_CONFIGURED',
+      ErrorCodes.SMTP_NOT_CONFIGURED,
       'SMTP is not configured. Set SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM in environment variables.'
     );
   }
@@ -28,7 +30,7 @@ function getSmtpConfig() {
   if (!Number.isFinite(port) || port <= 0) {
     throw new ApiError(
       500,
-      'SMTP_BAD_PORT',
+      ErrorCodes.SMTP_BAD_PORT,
       'SMTP_PORT must be a valid number'
     );
   }
@@ -36,11 +38,12 @@ function getSmtpConfig() {
   return {host, port, user, pass, from};
 }
 
-export const emailService = {
-  async sendEmail({to, subject, text, html}: SendEmailParams) {
-    const {host, port, user, pass, from} = getSmtpConfig();
+let transporter: Transporter | null = null;
 
-    const transporter = nodemailer.createTransport({
+function getTransporter(): Transporter {
+  if (!transporter) {
+    const {host, port, user, pass} = getSmtpConfig();
+    transporter = nodemailer.createTransport({
       host,
       port,
       secure: port === 465,
@@ -49,8 +52,16 @@ export const emailService = {
         pass
       }
     });
+  }
+  return transporter;
+}
 
-    await transporter.sendMail({
+export const emailService = {
+  async sendEmail({to, subject, text, html}: SendEmailParams) {
+    const {from} = getSmtpConfig();
+    const mailer = getTransporter();
+
+    await mailer.sendMail({
       from,
       to,
       subject,

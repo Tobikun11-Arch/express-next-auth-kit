@@ -11,6 +11,9 @@ const resolvedBaseUrl = API_BASE_URL.length > 0 ? API_BASE_URL : undefined;
 
 let refreshPromise: Promise<void> | null = null;
 
+let csrfToken: string | null = null;
+let httpClientRef: ReturnType<typeof axios.create>;
+
 const refreshClient = axios.create({
   baseURL: resolvedBaseUrl,
   timeout: 20000,
@@ -19,6 +22,33 @@ const refreshClient = axios.create({
     'Content-Type': 'application/json'
   }
 });
+
+async function ensureCsrfToken(): Promise<string | null> {
+  if (csrfToken) return csrfToken;
+  const res = await httpClientRef.get<{csrfToken: string}>('/csrf');
+  csrfToken = res.data.csrfToken;
+  return csrfToken;
+}
+
+function attachCsrfInterceptor(client: ReturnType<typeof axios.create>) {
+  client.interceptors.request.use(
+    async (config: InternalAxiosRequestConfig) => {
+      const method = (config.method ?? 'get').toUpperCase();
+      if (method === 'POST' || method === 'PUT' || method === 'PATCH' || method === 'DELETE') {
+        try {
+          const token = await ensureCsrfToken();
+          if (token) {
+            config.headers.set('x-csrf-token', token);
+          }
+        } catch {
+          // If the CSRF token cannot be fetched, let the request proceed;
+          // the server will reject it with 403 if the token is required.
+        }
+      }
+      return config;
+    }
+  );
+}
 
 function normalizeAxiosError(error: unknown): NormalizedApiError {
   const fallback: NormalizedApiError = {
@@ -75,9 +105,8 @@ export const httpClient = (() => {
     }
   });
 
-  client.interceptors.request.use(
-    (config: InternalAxiosRequestConfig) => config
-  );
+  httpClientRef = client;
+  attachCsrfInterceptor(client);
 
   client.interceptors.response.use(
     (response: AxiosResponse) => response,
@@ -123,3 +152,5 @@ export const httpClient = (() => {
 
   return client;
 })();
+
+attachCsrfInterceptor(refreshClient);

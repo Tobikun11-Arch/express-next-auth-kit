@@ -251,17 +251,7 @@ No redirect middleware for production deployments outside Vercel (which handles 
 
 ---
 
-### 24. `.env.example` file is missing entirely
-
-**File:** `.env.example`
-
-The file does not exist. Developers have no reference for required environment variables.
-
-**Fix:** Create `.env.example` with all variables: `MONGO_URI`, `JWT_SECRET`, `JWT_REFRESH_SECRET`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`, `COOKIE_SECURE`, `COOKIE_SAMESITE`, `PORT`.
-
----
-
-### 25. `any` types used in catch blocks throughout
+### 24. `any` types used in catch blocks throughout
 
 **File:** `backend/api/services/auth.service.ts:70`, `:288`
 

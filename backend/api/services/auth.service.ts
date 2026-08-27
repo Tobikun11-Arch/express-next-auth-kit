@@ -6,6 +6,7 @@ import {adminRepository} from '../repositories/admin.repository';
 import {ApiError} from '../utils/error';
 import {emailService} from './email.service';
 import {blocklistService} from './blocklist.service';
+import {ErrorCodes} from '../constants/errorCodes';
 import {verificationCodeEmailTemplate} from '../templates/verificationCodeEmail';
 import {resetPasswordEmailTemplate} from '../templates/resetPasswordEmail';
 
@@ -35,7 +36,7 @@ export const authService = {
     ]);
 
     if (existingEmail) {
-      throw new ApiError(409, 'EMAIL_EXISTS', 'Email already exists');
+          throw new ApiError(409, ErrorCodes.EMAIL_EXISTS, 'Email already exists');
     }
 
     try {
@@ -77,14 +78,15 @@ export const authService = {
         const keyValue = (err as {keyValue?: Record<string, string>}).keyValue;
 
         if (keyValue?.username) {
-          throw new ApiError(409, 'USERNAME_EXISTS', 'username already exists');
+          throw new ApiError(409, ErrorCodes.USERNAME_EXISTS, 'username already exists');
         }
 
         if (keyValue?.email) {
-          throw new ApiError(409, 'EMAIL_EXISTS', 'Email already exists');
+      throw new ApiError(409, ErrorCodes.EMAIL_EXISTS, 'Email already exists');
+
         }
 
-        throw new ApiError(409, 'ACCOUNT_EXISTS', 'Account already exists');
+        throw new ApiError(409, ErrorCodes.ACCOUNT_EXISTS, 'Account already exists');
       }
 
       throw err;
@@ -95,7 +97,7 @@ export const authService = {
     const user = await userRepository.findByEmail(email);
 
     if (!user || !user.verificationCode || !user.verificationExpiry) {
-      throw new ApiError(400, 'INVALID_CODE', 'Invalid verification code');
+      throw new ApiError(400, ErrorCodes.INVALID_CODE, 'Invalid verification code');
     }
 
     const codeMatches = user.verificationCode === code;
@@ -104,7 +106,7 @@ export const authService = {
     if (!codeMatches || !notExpired) {
       throw new ApiError(
         400,
-        'EXPIRED_CODE',
+        ErrorCodes.EXPIRED_CODE,
         'Verification code expired or invalid'
       );
     }
@@ -181,14 +183,14 @@ export const authService = {
     const user = await userRepository.findByEmail(email);
 
     if (!user || !user.resetCode || !user.resetExpiry) {
-      throw new ApiError(400, 'INVALID_CODE', 'Invalid or expired reset code');
+      throw new ApiError(400, ErrorCodes.INVALID_CODE, 'Invalid or expired reset code');
     }
 
     const codeMatches = user.resetCode === code;
     const notExpired = user.resetExpiry > new Date();
 
     if (!codeMatches || !notExpired) {
-      throw new ApiError(400, 'EXPIRED_CODE', 'Reset code expired or invalid');
+      throw new ApiError(400, ErrorCodes.EXPIRED_CODE, 'Reset code expired or invalid');
     }
   },
 
@@ -196,14 +198,14 @@ export const authService = {
     const user = await userRepository.findByEmail(email);
 
     if (!user || !user.resetCode || !user.resetExpiry) {
-      throw new ApiError(400, 'INVALID_CODE', 'Invalid or expired reset code');
+      throw new ApiError(400, ErrorCodes.INVALID_CODE, 'Invalid or expired reset code');
     }
 
     const codeMatches = user.resetCode === code;
     const notExpired = user.resetExpiry > new Date();
 
     if (!codeMatches || !notExpired) {
-      throw new ApiError(400, 'EXPIRED_CODE', 'Reset code expired or invalid');
+      throw new ApiError(400, ErrorCodes.EXPIRED_CODE, 'Reset code expired or invalid');
     }
 
     const passwordHash = await bcrypt.hash(newPassword, 10);
@@ -225,20 +227,20 @@ export const authService = {
     if (!account || !userType) {
       throw new ApiError(
         401,
-        'INVALID_CREDENTIALS',
+        ErrorCodes.INVALID_CREDENTIALS,
         'Invalid email or password'
       );
     }
 
     if (!account.isVerified) {
-      throw new ApiError(403, 'NOT_VERIFIED', 'Email not verified');
+      throw new ApiError(403, ErrorCodes.NOT_VERIFIED, 'Email not verified');
     }
 
     const match = await bcrypt.compare(password, account.passwordHash);
     if (!match) {
       throw new ApiError(
         401,
-        'INVALID_CREDENTIALS',
+        ErrorCodes.INVALID_CREDENTIALS,
         'Invalid email or password'
       );
     }
@@ -261,7 +263,7 @@ export const authService = {
   async refreshAccessToken(refreshToken: string) {
     try {
       if (blocklistService.isRevoked(refreshToken)) {
-        throw new ApiError(401, 'UNAUTHORIZED', 'Token revoked');
+        throw new ApiError(401, ErrorCodes.UNAUTHORIZED, 'Token revoked');
       }
 
       const payload = jwt.verify(
@@ -274,11 +276,11 @@ export const authService = {
         : adminRepository.findById(payload.userId));
 
       if (!account) {
-        throw new ApiError(401, 'UNAUTHORIZED', 'Invalid token');
+        throw new ApiError(401, ErrorCodes.UNAUTHORIZED, 'Invalid token');
       }
 
       if (!account.isVerified) {
-        throw new ApiError(403, 'NOT_VERIFIED', 'Email not verified');
+        throw new ApiError(403, ErrorCodes.NOT_VERIFIED, 'Email not verified');
       }
 
       blocklistService.revoke(refreshToken);
@@ -297,7 +299,7 @@ export const authService = {
 
       return {accessToken, refreshToken: newRefreshToken};
     } catch {
-      throw new ApiError(401, 'UNAUTHORIZED', 'Invalid token');
+      throw new ApiError(401, ErrorCodes.UNAUTHORIZED, 'Invalid token');
     }
   },
 
