@@ -138,11 +138,23 @@ export const httpClient = (() => {
       ) {
         originalConfig._retry = true;
         try {
+          // Single-flight: concurrent 401s in this tab share one refresh.
           await refreshAccessToken();
           return client(originalConfig);
         } catch (refreshError) {
-          // Reject here so your SignInPage catch runs
-          return Promise.reject(normalizeAxiosError(refreshError));
+          // Only a definitive 401 from /auth/refresh means the session
+          // is gone. Network errors, timeouts and 5xx leave the cookies
+          // intact, so surface the original error and let the next
+          // request retry the refresh.
+          const isDefinitiveAuthFailure =
+            axios.isAxiosError(refreshError) &&
+            refreshError.response?.status === 401;
+
+          if (isDefinitiveAuthFailure) {
+            return Promise.reject(normalizeAxiosError(refreshError));
+          }
+
+          return Promise.reject(normalizeAxiosError(axiosError));
         }
       }
 

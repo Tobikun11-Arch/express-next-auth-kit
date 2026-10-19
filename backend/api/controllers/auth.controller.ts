@@ -13,6 +13,13 @@ const COOKIE_OPTIONS: CookieOptions = {
   path: '/'
 };
 
+function getSessionMeta(req: Request) {
+  return {
+    ip: req.ip ?? null,
+    userAgent: req.get('user-agent') ?? null
+  };
+}
+
 export const authController = {
   async me(req: Request, res: Response, next: NextFunction) {
     try {
@@ -65,7 +72,11 @@ export const authController = {
   async login(req: Request, res: Response, next: NextFunction) {
     try {
       const {accessToken, refreshToken, user, userType} =
-        await authService.login(req.body.email, req.body.password);
+        await authService.login(
+          req.body.email,
+          req.body.password,
+          getSessionMeta(req)
+        );
 
       const opts = COOKIE_OPTIONS;
 
@@ -100,7 +111,10 @@ export const authController = {
         throw new ApiError(401, ErrorCodes.UNAUTHORIZED, 'Missing refresh token');
       }
 
-      const result = await authService.refreshAccessToken(refreshToken);
+      const result = await authService.refreshAccessToken(
+        refreshToken,
+        getSessionMeta(req)
+      );
 
       const opts = COOKIE_OPTIONS;
       res.cookie(ACCESS_TOKEN_COOKIE, result.accessToken, {
@@ -114,9 +128,14 @@ export const authController = {
 
       res.status(200).json({message: 'Refreshed'});
     } catch (error) {
-      const opts = COOKIE_OPTIONS;
-      res.clearCookie(ACCESS_TOKEN_COOKIE, opts);
-      res.clearCookie(REFRESH_TOKEN_COOKIE, opts);
+      // Only clear cookies on a definitive auth failure. Transient
+      // errors (DB hiccup, 5xx) must keep the refresh cookie so the
+      // client can retry instead of being forced to log in.
+      if (error instanceof ApiError && error.statusCode === 401) {
+        const opts = COOKIE_OPTIONS;
+        res.clearCookie(ACCESS_TOKEN_COOKIE, opts);
+        res.clearCookie(REFRESH_TOKEN_COOKIE, opts);
+      }
       next(error);
     }
   },
@@ -125,7 +144,7 @@ export const authController = {
     try {
       const refreshToken = req.cookies?.[REFRESH_TOKEN_COOKIE] as string | undefined;
       if (refreshToken) {
-        authService.logout(refreshToken);
+        await authService.logout(refreshToken);
       }
 
       const opts = COOKIE_OPTIONS;

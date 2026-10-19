@@ -2,20 +2,12 @@ import app from './app';
 import {connectDb} from './api/config/db';
 import {env} from './api/config/env';
 
-let dbInitPromise: Promise<unknown> | null = null;
-const ensureDb = () => {
-  if (!dbInitPromise) {
-    dbInitPromise = connectDb();
-  }
-  return dbInitPromise;
-};
-
 export default async function handler(
   req: import('express').Request,
   res: import('express').Response
 ) {
   try {
-    await ensureDb();
+    await connectDb();
     return app(req, res);
   } catch (error) {
     console.error('Failed to connect to database', error);
@@ -24,7 +16,7 @@ export default async function handler(
 }
 
 if (process.env.VERCEL !== '1') {
-  ensureDb()
+  connectDb()
     .then(() => {
       app.listen(env.PORT, () => {
         console.log(`Server listening on port ${env.PORT}`);

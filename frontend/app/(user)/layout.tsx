@@ -4,6 +4,7 @@ import {useEffect} from 'react';
 import {useRouter} from 'next/navigation';
 import {useMeQuery} from '@/lib/hooks/auth/useMeQuery';
 import {getDashboardPath} from '@/lib/auth/redirects';
+import {isAuthError} from '@/lib/api/isAuthError';
 import Loading from '../loading';
 
 export default function CustomerLayout({
@@ -12,12 +13,18 @@ export default function CustomerLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const {data, isLoading, isFetching, isError, isSuccess} = useMeQuery();
+  const {data, isLoading, isFetching, isError, isSuccess, error} = useMeQuery();
 
-  const isRedirecting = isError || (isSuccess && data.user.type !== 'user');
+  // Only a definitive 401 means signed out — transient network/5xx
+  // failures keep the session and stay on the loading state so the
+  // query can retry instead of forcing a login.
+  const isSignedOut = isError && isAuthError(error);
+
+  const isRedirecting =
+    isSignedOut || (isSuccess && data.user.type !== 'user');
 
   useEffect(() => {
-    if (isError) {
+    if (isSignedOut) {
       router.replace('/sign-in');
       return;
     }
@@ -27,9 +34,9 @@ export default function CustomerLayout({
     if (data.user.type !== 'user') {
       router.replace(getDashboardPath(data.user.type));
     }
-  }, [data, isError, isSuccess, router]);
+  }, [data, isSignedOut, isSuccess, router]);
 
-  if (isLoading || isFetching || isRedirecting) return <Loading />;
+  if (isLoading || isFetching || isError || isRedirecting) return <Loading />;
 
   return <>{children}</>;
 }

@@ -21,7 +21,7 @@ npm test             # Jest (no test suite included)
 ```
 api/config/          # DB connection (db.ts) and env validation (env.ts)
 api/controllers/     # Route handlers (thin — delegate to services)
-api/services/        # Business logic (auth, email, blocklist)
+api/services/        # Business logic (auth, email)
 api/repositories/    # Data access layer (user, admin)
 api/middleware/       # Auth, validation, rate limiting, sanitize (NoSQL injection prevention), error handler
 api/models/          # Mongoose models (Admin.model.ts, User.model.ts) extending BaseUser schema
@@ -60,7 +60,7 @@ All API errors must follow this shape (enforced in `api/middleware/errorHandler.
 - Never commit `.env` files — only `.env.example` is tracked
 - Never log secrets, tokens, or passwords
 - Cookies use HTTP-only, Secure, SameSite — configured via env vars
-- Refresh tokens are revoked on use (in-memory blocklist — resets on server restart)
+- Refresh tokens are rotated on use; sessions are tracked in MongoDB (`refresh_sessions`) with a 60s grace window for tab races, and reuse beyond the window revokes the whole token family
 - Passwords must be bcrypt-hashed before storage
 - All input passes through Zod validation before reaching services
 - Sanitize middleware strips `$`-prefixed keys to prevent NoSQL injection
@@ -68,5 +68,5 @@ All API errors must follow this shape (enforced in `api/middleware/errorHandler.
 
 ## Testing
 
-- Jest + Supertest tooling is available, but no test suite is included in this repository
+- Jest + Supertest tooling is available; refresh rotation/grace/reuse tests live in `backend/tests/`
 - When adding tests, place them in `backend/tests/` and assert against the error shape above

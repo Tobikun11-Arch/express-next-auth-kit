@@ -3,25 +3,29 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.authController = void 0;
 const auth_service_1 = require("../services/auth.service");
 const error_1 = require("../utils/error");
+const errorCodes_1 = require("../constants/errorCodes");
 const env_1 = require("../config/env");
-const ACCESS_COOKIE = 'dc_access_token';
-const REFRESH_COOKIE = 'dc_refresh_token';
-function getCookieOptions() {
+const cookies_1 = require("../constants/cookies");
+const COOKIE_OPTIONS = {
+    httpOnly: true,
+    secure: env_1.env.COOKIE_SECURE === 'true',
+    sameSite: env_1.env.COOKIE_SAMESITE ?? 'lax',
+    path: '/'
+};
+function getSessionMeta(req) {
     return {
-        httpOnly: true,
-        secure: env_1.env.COOKIE_SECURE === 'true',
-        sameSite: env_1.env.COOKIE_SAMESITE ?? 'lax',
-        path: '/'
+        ip: req.ip ?? null,
+        userAgent: req.get('user-agent') ?? null
     };
 }
 exports.authController = {
     async me(req, res, next) {
         try {
             if (!req.auth) {
-                throw new error_1.ApiError(401, 'UNAUTHORIZED', 'Not authenticated');
+                throw new error_1.ApiError(401, errorCodes_1.ErrorCodes.UNAUTHORIZED, 'Not authenticated');
             }
             if (!req.auth.type) {
-                throw new error_1.ApiError(401, 'UNAUTHORIZED', 'Invalid token');
+                throw new error_1.ApiError(401, errorCodes_1.ErrorCodes.UNAUTHORIZED, 'Invalid token');
             }
             res.status(200).json({
                 user: {
@@ -63,13 +67,13 @@ exports.authController = {
     },
     async login(req, res, next) {
         try {
-            const { accessToken, refreshToken, user, userType } = await auth_service_1.authService.login(req.body.email, req.body.password);
-            const opts = getCookieOptions();
-            res.cookie(ACCESS_COOKIE, accessToken, {
+            const { accessToken, refreshToken, user, userType } = await auth_service_1.authService.login(req.body.email, req.body.password, getSessionMeta(req));
+            const opts = COOKIE_OPTIONS;
+            res.cookie(cookies_1.ACCESS_TOKEN_COOKIE, accessToken, {
                 ...opts,
                 maxAge: 15 * 60 * 1000
             });
-            res.cookie(REFRESH_COOKIE, refreshToken, {
+            res.cookie(cookies_1.REFRESH_TOKEN_COOKIE, refreshToken, {
                 ...opts,
                 maxAge: 7 * 24 * 60 * 60 * 1000
             });
@@ -87,39 +91,44 @@ exports.authController = {
     },
     async refresh(req, res, next) {
         try {
-            const refreshToken = req.cookies?.[REFRESH_COOKIE] ??
+            const refreshToken = req.cookies?.[cookies_1.REFRESH_TOKEN_COOKIE] ??
                 req.body.refreshToken;
             if (!refreshToken) {
-                throw new error_1.ApiError(401, 'UNAUTHORIZED', 'Missing refresh token');
+                throw new error_1.ApiError(401, errorCodes_1.ErrorCodes.UNAUTHORIZED, 'Missing refresh token');
             }
-            const result = await auth_service_1.authService.refreshAccessToken(refreshToken);
-            const opts = getCookieOptions();
-            res.cookie(ACCESS_COOKIE, result.accessToken, {
+            const result = await auth_service_1.authService.refreshAccessToken(refreshToken, getSessionMeta(req));
+            const opts = COOKIE_OPTIONS;
+            res.cookie(cookies_1.ACCESS_TOKEN_COOKIE, result.accessToken, {
                 ...opts,
                 maxAge: 15 * 60 * 1000
             });
-            res.cookie(REFRESH_COOKIE, result.refreshToken, {
+            res.cookie(cookies_1.REFRESH_TOKEN_COOKIE, result.refreshToken, {
                 ...opts,
                 maxAge: 7 * 24 * 60 * 60 * 1000
             });
             res.status(200).json({ message: 'Refreshed' });
         }
         catch (error) {
-            const opts = getCookieOptions();
-            res.clearCookie(ACCESS_COOKIE, opts);
-            res.clearCookie(REFRESH_COOKIE, opts);
+            // Only clear cookies on a definitive auth failure. Transient
+            // errors (DB hiccup, 5xx) must keep the refresh cookie so the
+            // client can retry instead of being forced to log in.
+            if (error instanceof error_1.ApiError && error.statusCode === 401) {
+                const opts = COOKIE_OPTIONS;
+                res.clearCookie(cookies_1.ACCESS_TOKEN_COOKIE, opts);
+                res.clearCookie(cookies_1.REFRESH_TOKEN_COOKIE, opts);
+            }
             next(error);
         }
     },
     async logout(req, res, next) {
         try {
-            const refreshToken = req.cookies?.[REFRESH_COOKIE];
+            const refreshToken = req.cookies?.[cookies_1.REFRESH_TOKEN_COOKIE];
             if (refreshToken) {
-                auth_service_1.authService.logout(refreshToken);
+                await auth_service_1.authService.logout(refreshToken);
             }
-            const opts = getCookieOptions();
-            res.clearCookie(ACCESS_COOKIE, opts);
-            res.clearCookie(REFRESH_COOKIE, opts);
+            const opts = COOKIE_OPTIONS;
+            res.clearCookie(cookies_1.ACCESS_TOKEN_COOKIE, opts);
+            res.clearCookie(cookies_1.REFRESH_TOKEN_COOKIE, opts);
             res.status(200).json({ message: 'Logged out' });
         }
         catch (error) {
@@ -159,6 +168,18 @@ exports.authController = {
         try {
             await auth_service_1.authService.resetPassword(req.body.email, req.body.code, req.body.newPassword);
             res.status(200).json({ message: 'Password reset successfully' });
+        }
+        catch (error) {
+            next(error);
+        }
+    },
+    async changePassword(req, res, next) {
+        try {
+            if (!req.auth) {
+                throw new error_1.ApiError(401, errorCodes_1.ErrorCodes.UNAUTHORIZED, 'Not authenticated');
+            }
+            await auth_service_1.authService.changePassword(req.auth.userId, req.auth.type ?? 'user', req.body.currentPassword, req.body.newPassword);
+            res.status(200).json({ message: 'Password changed successfully' });
         }
         catch (error) {
             next(error);

@@ -8,5 +8,6 @@ exports.adminRepository = {
         $or: [{ email: identifier.toLowerCase() }, { username: identifier }]
     }).exec(),
     findById: (id) => Admin_model_1.AdminModel.findById(id).exec(),
+    updatePassword: (userId, passwordHash) => Admin_model_1.AdminModel.updateOne({ _id: userId }, { passwordHash }).exec(),
     create: (data) => Admin_model_1.AdminModel.create(data)
 };

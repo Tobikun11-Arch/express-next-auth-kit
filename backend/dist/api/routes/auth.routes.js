@@ -6,17 +6,23 @@ const validation_1 = require("../middleware/validation");
 const auth_dto_1 = require("../dtos/auth.dto");
 const rateLimit_1 = require("../middleware/rateLimit");
 const auth_1 = require("../middleware/auth");
+const csrf_1 = require("../middleware/csrf");
 const router = (0, express_1.Router)();
+// sensitive write operations — strict limit
 router.post('/register', rateLimit_1.authLimiter, (0, validation_1.validate)(auth_dto_1.registerDto), auth_controller_1.authController.register);
 router.post('/verify', rateLimit_1.authLimiter, (0, validation_1.validate)(auth_dto_1.verifyDto), auth_controller_1.authController.verify);
 router.post('/resend-verification', rateLimit_1.authLimiter, (0, validation_1.validate)(auth_dto_1.resendVerificationDto), auth_controller_1.authController.resendVerification);
 router.post('/login', rateLimit_1.authLimiter, (0, validation_1.validate)(auth_dto_1.loginDto), auth_controller_1.authController.login);
-router.post('/refresh', rateLimit_1.authLimiter, (0, validation_1.validate)(auth_dto_1.refreshDto), auth_controller_1.authController.refresh);
-router.post('/logout', rateLimit_1.authLimiter, auth_controller_1.authController.logout);
-router.get('/me', rateLimit_1.authLimiter, auth_1.requireAuth, auth_controller_1.authController.me);
-// password reset
+// password reset — strict limit
 router.post('/forgot-password', rateLimit_1.authLimiter, (0, validation_1.validate)(auth_dto_1.forgotPasswordDto), auth_controller_1.authController.forgotPassword);
 router.post('/verify-reset-code', rateLimit_1.authLimiter, (0, validation_1.validate)(auth_dto_1.verifyDto), auth_controller_1.authController.verifyResetCode);
 router.post('/resend-reset-code', rateLimit_1.authLimiter, (0, validation_1.validate)(auth_dto_1.resendResetCodeDto), auth_controller_1.authController.resendResetCode);
 router.post('/reset-password', rateLimit_1.authLimiter, (0, validation_1.validate)(auth_dto_1.resetPasswordDto), auth_controller_1.authController.resetPassword);
+// authenticated actions — moderate limit
+router.post('/refresh', rateLimit_1.authActionLimiter, (0, validation_1.validate)(auth_dto_1.refreshDto), auth_controller_1.authController.refresh);
+router.post('/logout', rateLimit_1.authActionLimiter, auth_controller_1.authController.logout);
+router.put('/password', rateLimit_1.authActionLimiter, auth_1.requireAuth, (0, validation_1.validate)(auth_dto_1.changePasswordDto), auth_controller_1.authController.changePassword);
+router.get('/csrf', rateLimit_1.authActionLimiter, csrf_1.issueCsrfToken);
+// read-only — lenient limit
+router.get('/me', rateLimit_1.authReadLimiter, auth_1.requireAuth, auth_controller_1.authController.me);
 exports.default = router;

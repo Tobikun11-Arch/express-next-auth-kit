@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.resendResetCodeDto = exports.resetPasswordDto = exports.forgotPasswordDto = exports.refreshDto = exports.loginDto = exports.resendVerificationDto = exports.verifyDto = exports.registerDto = void 0;
+exports.changePasswordDto = exports.resendResetCodeDto = exports.resetPasswordDto = exports.forgotPasswordDto = exports.refreshDto = exports.loginDto = exports.resendVerificationDto = exports.verifyDto = exports.registerDto = void 0;
 const zod_1 = require("zod");
 const passwordSchema = zod_1.z
     .string()
@@ -14,7 +14,7 @@ exports.registerDto = zod_1.z.object({
     lastName: zod_1.z.string().min(1),
     email: zod_1.z.string().email(),
     password: passwordSchema,
-    username: zod_1.z.string().min(1).optional()
+    username: zod_1.z.string().min(1)
 });
 exports.verifyDto = zod_1.z.object({
     email: zod_1.z.string().email(),
@@ -25,7 +25,7 @@ exports.resendVerificationDto = zod_1.z.object({
 });
 exports.loginDto = zod_1.z.object({
     email: zod_1.z.string().min(1),
-    password: passwordSchema
+    password: zod_1.z.string().min(1)
 });
 exports.refreshDto = zod_1.z.object({
     refreshToken: zod_1.z.string().min(1).optional()
@@ -40,4 +40,8 @@ exports.resetPasswordDto = zod_1.z.object({
 });
 exports.resendResetCodeDto = zod_1.z.object({
     email: zod_1.z.string().email()
+});
+exports.changePasswordDto = zod_1.z.object({
+    currentPassword: zod_1.z.string().min(1),
+    newPassword: passwordSchema
 });

@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.validate = void 0;
 const error_1 = require("../utils/error");
+const errorCodes_1 = require("../constants/errorCodes");
 const validate = (schema) => (req, _res, next) => {
     const result = schema.safeParse(req.body);
     if (!result.success) {
@@ -11,7 +12,7 @@ const validate = (schema) => (req, _res, next) => {
             .filter(Boolean)[0];
         const firstFormError = flattened.formErrors.filter(Boolean)[0];
         const message = firstFieldError ?? firstFormError ?? 'Invalid request';
-        return next(new error_1.ApiError(400, 'VALIDATION_ERROR', message, flattened));
+        return next(new error_1.ApiError(400, errorCodes_1.ErrorCodes.VALIDATION_ERROR, message, flattened));
     }
     next();
 };

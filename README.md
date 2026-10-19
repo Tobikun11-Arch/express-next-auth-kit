@@ -66,7 +66,7 @@ backend/
 │   │   └── base/              # BaseUser schema with timestamps
 │   ├── repositories/           # Data access layer
 │   ├── routes/                 # Express router definitions
-│   ├── services/               # Business logic (auth, email, blocklist)
+│   ├── services/               # Business logic (auth, email)
 │   ├── templates/              # HTML email templates
 │   └── utils/                  # Error utilities
 ├── scripts/

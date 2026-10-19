@@ -1,11 +1,12 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import {randomUUID} from 'crypto';
 import {env} from '../config/env';
 import {userRepository} from '../repositories/user.repository';
 import {adminRepository} from '../repositories/admin.repository';
+import {refreshSessionRepository} from '../repositories/refreshSession.repository';
 import {ApiError} from '../utils/error';
 import {emailService} from './email.service';
-import {blocklistService} from './blocklist.service';
 import {ErrorCodes} from '../constants/errorCodes';
 import {verificationCodeEmailTemplate} from '../templates/verificationCodeEmail';
 import {resetPasswordEmailTemplate} from '../templates/resetPasswordEmail';
@@ -18,10 +19,69 @@ function getVerificationExpiry(minutes: number) {
   return new Date(Date.now() + minutes * 60 * 1000);
 }
 
+const ACCESS_TOKEN_TTL = '15m';
+const REFRESH_TOKEN_TTL = '7d';
+const REFRESH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+// Rotated tokens within this window are treated as tab races / network
+// retries (another instance may have rotated first) instead of reuse.
+const ROTATION_GRACE_MS = 60 * 1000;
+
 type RefreshTokenPayload = {
   userId: string;
   type: 'user' | 'admin';
+  jti?: string;
+  fid?: string;
 };
+
+type SessionMeta = {
+  ip?: string | null;
+  userAgent?: string | null;
+};
+
+function signAccessToken(userId: string, type: 'user' | 'admin') {
+  return jwt.sign({userId, type}, env.JWT_SECRET, {
+    expiresIn: ACCESS_TOKEN_TTL
+  });
+}
+
+function signRefreshToken(
+  userId: string,
+  type: 'user' | 'admin',
+  jti: string,
+  familyId: string
+) {
+  return jwt.sign({userId, type, jti, fid: familyId}, env.JWT_REFRESH_SECRET, {
+    expiresIn: REFRESH_TOKEN_TTL
+  });
+}
+
+async function createSessionAndIssueTokens(
+  account: {id: string},
+  type: 'user' | 'admin',
+  opts: {familyId?: string; meta?: SessionMeta} = {}
+) {
+  const jti = randomUUID();
+  const familyId = opts.familyId ?? randomUUID();
+
+  await refreshSessionRepository.create({
+    jti,
+    userId: account.id,
+    type,
+    familyId,
+    expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL_MS),
+    userAgent: opts.meta?.userAgent ?? null,
+    ip: opts.meta?.ip ?? null
+  });
+
+  return {
+    accessToken: signAccessToken(account.id, type),
+    refreshToken: signRefreshToken(account.id, type, jti, familyId)
+  };
+}
+
+function isWithinGraceWindow(rotatedAt: Date) {
+  return Date.now() - rotatedAt.getTime() <= ROTATION_GRACE_MS;
+}
 
 export const authService = {
   async register(data: {
@@ -240,7 +300,11 @@ export const authService = {
     await repository.updatePassword(userId, passwordHash);
   },
 
-  async login(email: string, password: string) {
+  async login(
+    email: string,
+    password: string,
+    meta: SessionMeta = {}
+  ) {
     const identifier = email;
     const [user, admin] = await Promise.all([
       userRepository.findByEmail(identifier),
@@ -271,65 +335,142 @@ export const authService = {
       );
     }
 
-    const accessToken: string = jwt.sign(
-      {userId: account.id, type: userType},
-      env.JWT_SECRET,
-      {expiresIn: '15m'}
-    );
-
-    const refreshToken = jwt.sign(
-      {userId: account.id, type: userType},
-      env.JWT_REFRESH_SECRET,
-      {expiresIn: '7d'}
+    const {accessToken, refreshToken} = await createSessionAndIssueTokens(
+      {id: account.id},
+      userType,
+      {meta}
     );
 
     return {accessToken, refreshToken, user: account, userType};
   },
 
-  async refreshAccessToken(refreshToken: string) {
+  async refreshAccessToken(refreshToken: string, meta: SessionMeta = {}) {
+    let payload: RefreshTokenPayload;
+
     try {
-      if (blocklistService.isRevoked(refreshToken)) {
-        throw new ApiError(401, ErrorCodes.UNAUTHORIZED, 'Token revoked');
+      payload = jwt.verify(
+        refreshToken,
+        env.JWT_REFRESH_SECRET
+      ) as RefreshTokenPayload;
+    } catch {
+      throw new ApiError(401, ErrorCodes.UNAUTHORIZED, 'Invalid token');
+    }
+
+    if (!payload.userId || !payload.type) {
+      throw new ApiError(401, ErrorCodes.UNAUTHORIZED, 'Invalid token');
+    }
+
+    const account = await (payload.type === 'user'
+      ? userRepository.findById(payload.userId)
+      : adminRepository.findById(payload.userId));
+
+    if (!account) {
+      throw new ApiError(401, ErrorCodes.UNAUTHORIZED, 'Invalid token');
+    }
+
+    if (!account.isVerified) {
+      // 401 (not 403) so clients treat it as a dead session and stop
+      // retrying refresh in a loop.
+      throw new ApiError(401, ErrorCodes.UNAUTHORIZED, 'Invalid token');
+    }
+
+    // Legacy refresh tokens issued before session tracking carry no jti.
+    // Accept them once and create a session on first use so existing
+    // users are not forced to re-login after this deploy.
+    if (!payload.jti) {
+      return createSessionAndIssueTokens({id: account.id}, payload.type, {
+        meta
+      });
+    }
+
+    const session = await refreshSessionRepository.findByJti(payload.jti);
+
+    if (!session || session.revokedAt || session.expiresAt <= new Date()) {
+      throw new ApiError(401, ErrorCodes.UNAUTHORIZED, 'Invalid token');
+    }
+
+    if (session.rotatedAt) {
+      if (!isWithinGraceWindow(session.rotatedAt)) {
+        // Reuse of a token rotated beyond the grace window: assume
+        // compromise or a stale copy and revoke the whole family.
+        await refreshSessionRepository.revokeFamily(session.familyId);
+        throw new ApiError(401, ErrorCodes.UNAUTHORIZED, 'Invalid token');
       }
 
+      // Tab race or network retry: another instance/tab already rotated
+      // this token. Issue a fresh valid pair in the same family instead
+      // of failing so the loser still stays signed in.
+      return createSessionAndIssueTokens({id: account.id}, payload.type, {
+        familyId: session.familyId,
+        meta
+      });
+    }
+
+    // Atomic rotation: only one concurrent caller can win this update.
+    const newJti = randomUUID();
+    const rotated = await refreshSessionRepository.rotate(
+      payload.jti,
+      newJti
+    );
+
+    if (!rotated) {
+      const current = await refreshSessionRepository.findByJti(payload.jti);
+
+      if (
+        !current ||
+        current.revokedAt ||
+        !current.rotatedAt ||
+        !isWithinGraceWindow(current.rotatedAt)
+      ) {
+        if (current && !current.revokedAt) {
+          await refreshSessionRepository.revokeFamily(current.familyId);
+        }
+        throw new ApiError(401, ErrorCodes.UNAUTHORIZED, 'Invalid token');
+      }
+
+      return createSessionAndIssueTokens({id: account.id}, payload.type, {
+        familyId: current.familyId,
+        meta
+      });
+    }
+
+    await refreshSessionRepository.create({
+      jti: newJti,
+      userId: account.id,
+      type: payload.type,
+      familyId: session.familyId,
+      expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL_MS),
+      userAgent: meta.userAgent ?? null,
+      ip: meta.ip ?? null
+    });
+
+    return {
+      accessToken: signAccessToken(account.id, payload.type),
+      refreshToken: signRefreshToken(
+        account.id,
+        payload.type,
+        newJti,
+        session.familyId
+      )
+    };
+  },
+
+  async logout(refreshToken: string) {
+    try {
       const payload = jwt.verify(
         refreshToken,
         env.JWT_REFRESH_SECRET
       ) as RefreshTokenPayload;
 
-      const account = await (payload.type === 'user'
-        ? userRepository.findById(payload.userId)
-        : adminRepository.findById(payload.userId));
+      if (!payload.jti) return;
 
-      if (!account) {
-        throw new ApiError(401, ErrorCodes.UNAUTHORIZED, 'Invalid token');
+      const session = await refreshSessionRepository.findByJti(payload.jti);
+      if (session) {
+        // Revoke the whole family so grace-window duplicates die too.
+        await refreshSessionRepository.revokeFamily(session.familyId);
       }
-
-      if (!account.isVerified) {
-        throw new ApiError(403, ErrorCodes.NOT_VERIFIED, 'Email not verified');
-      }
-
-      blocklistService.revoke(refreshToken);
-
-      const accessToken = jwt.sign(
-        {userId: account.id, type: payload.type},
-        env.JWT_SECRET,
-        {expiresIn: '15m'}
-      );
-
-      const newRefreshToken = jwt.sign(
-        {userId: account.id, type: payload.type},
-        env.JWT_REFRESH_SECRET,
-        {expiresIn: '7d'}
-      );
-
-      return {accessToken, refreshToken: newRefreshToken};
     } catch {
-      throw new ApiError(401, ErrorCodes.UNAUTHORIZED, 'Invalid token');
+      // Invalid or expired token — nothing to revoke.
     }
-  },
-
-  logout(refreshToken: string) {
-    blocklistService.revoke(refreshToken);
   }
 };
