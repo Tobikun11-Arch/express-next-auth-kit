@@ -20,7 +20,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://yourdomain.vercel.app'), // Replace with your actual URL
+  metadataBase: new URL('https://express-next-auth-kit.vercel.app'),
   title: 'App name',
   description: 'App name description',
   icons: {
@@ -33,11 +33,11 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'App name',
     description: 'App name description',
-    url: 'https://yourdomain.vercel.app/',
+    url: 'https://express-next-auth-kit.vercel.app/',
     type: 'website',
     images: [
       {
-        url: '/assets/logo.png', // Replace with your actual image path of logo
+        url: '/assets/logo.png',
         width: 1200,
         height: 630,
         alt: 'App name Preview'

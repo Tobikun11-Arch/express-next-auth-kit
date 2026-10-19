@@ -56,7 +56,6 @@ const STRUCTURE = [
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-white text-black">
-      {/* Hero */}
       <section className="flex flex-col items-center justify-center px-6 pt-32 pb-20 text-center">
         <div className="mb-6 inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-4 py-1.5 text-xs text-gray-600">
           Open source boilerplate
@@ -88,7 +87,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Features */}
       <section className="border-t border-gray-100 px-6 py-24">
         <div className="mx-auto max-w-5xl">
           <h2 className="text-center text-3xl font-bold tracking-tight">
@@ -108,7 +106,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Tech Stack */}
       <section className="border-t border-gray-100 bg-gray-50 px-6 py-24">
         <div className="mx-auto max-w-5xl">
           <h2 className="text-center text-3xl font-bold tracking-tight">Tech Stack</h2>
@@ -129,7 +126,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Structure */}
       <section className="border-t border-gray-100 px-6 py-24">
         <div className="mx-auto max-w-5xl">
           <h2 className="text-center text-3xl font-bold tracking-tight">
@@ -152,7 +148,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* CI/CD */}
       <section className="border-t border-gray-100 bg-gray-50 px-6 py-24">
         <div className="mx-auto max-w-5xl">
           <h2 className="text-center text-3xl font-bold tracking-tight">
@@ -186,7 +181,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* CTA */}
       <section className="border-t border-gray-100 px-6 py-24">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-3xl font-bold tracking-tight">Ready to start?</h2>
@@ -211,7 +205,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Footer */}
       <footer className="border-t border-gray-100 px-6 py-8">
         <div className="mx-auto flex max-w-5xl flex-col items-center justify-between gap-4 sm:flex-row">
           <p className="text-sm text-gray-400">

@@ -15,7 +15,6 @@ function sanitizeObject(obj: any) {
   }
 }
 
-// I sanitize request payloads to reduce injection risks
 export function sanitize(req: Request, _res: Response, next: NextFunction) {
   sanitizeObject(req.body);
   sanitizeObject(req.query);

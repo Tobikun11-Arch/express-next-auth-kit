@@ -22,7 +22,6 @@ import {issueCsrfToken} from '../middleware/csrf';
 
 const router = Router();
 
-// sensitive write operations — strict limit
 router.post(
   '/register',
   authLimiter,
@@ -38,7 +37,6 @@ router.post(
 );
 router.post('/login', authLimiter, validate(loginDto), authController.login);
 
-// password reset — strict limit
 router.post(
   '/forgot-password',
   authLimiter,
@@ -64,7 +62,6 @@ router.post(
   authController.resetPassword
 );
 
-// authenticated actions — moderate limit
 router.post(
   '/refresh',
   authActionLimiter,
@@ -81,7 +78,6 @@ router.put(
 );
 router.get('/csrf', authActionLimiter, issueCsrfToken);
 
-// read-only — lenient limit
 router.get('/me', authReadLimiter, requireAuth, authController.me);
 
 export default router;

@@ -15,9 +15,6 @@ export default function AdminLayout({
   const router = useRouter();
   const {data, isLoading, isFetching, isError, isSuccess, error} = useMeQuery();
 
-  // Only a definitive 401 means signed out — transient network/5xx
-  // failures keep the session and stay on the loading state so the
-  // query can retry instead of forcing a login.
   const isSignedOut = isError && isAuthError(error);
 
   const isRedirecting =

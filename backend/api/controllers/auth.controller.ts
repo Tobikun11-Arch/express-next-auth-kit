@@ -128,9 +128,6 @@ export const authController = {
 
       res.status(200).json({message: 'Refreshed'});
     } catch (error) {
-      // Only clear cookies on a definitive auth failure. Transient
-      // errors (DB hiccup, 5xx) must keep the refresh cookie so the
-      // client can retry instead of being forced to log in.
       if (error instanceof ApiError && error.statusCode === 401) {
         const opts = COOKIE_OPTIONS;
         res.clearCookie(ACCESS_TOKEN_COOKIE, opts);

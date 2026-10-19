@@ -23,7 +23,7 @@ export default function VerifyEmailClient() {
   const searchParams = useSearchParams();
 
   const emailFromQuery = searchParams.get('email') ?? '';
-  const mode = searchParams.get('mode'); // 'reset' or null (signup)
+  const mode = searchParams.get('mode');
   const isResetMode = mode === 'reset';
 
   const [code, setCode] = useState('');

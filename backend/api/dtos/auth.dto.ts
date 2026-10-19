@@ -21,7 +21,7 @@ export const registerDto = z.object({
 
 export const verifyDto = z.object({
   email: z.string().email(),
-  code: z.string().length(6) // always 6 digits from generateVerificationCode()
+  code: z.string().length(6)
 });
 
 export const resendVerificationDto = z.object({

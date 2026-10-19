@@ -1,8 +1,6 @@
 import mongoose from 'mongoose';
 import {env} from './env';
 
-// Cached across invocations on serverless platforms so warm Lambda
-// instances reuse the pooled connection instead of reconnecting.
 let connectionPromise: Promise<typeof mongoose> | null = null;
 
 export async function connectDb() {

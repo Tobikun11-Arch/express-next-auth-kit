@@ -6,8 +6,20 @@ import axios, {
 } from 'axios';
 import type {ApiErrorPayload, NormalizedApiError} from './types';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
-const resolvedBaseUrl = API_BASE_URL.length > 0 ? API_BASE_URL : undefined;
+function normalizeApiBaseUrl(rawValue: string | undefined): string | undefined {
+  const trimmed = (rawValue ?? '').trim().replace(/\/+$/, '');
+  if (trimmed.length === 0) return undefined;
+
+  if (trimmed.startsWith('/')) return trimmed;
+
+  const hasProtocol = /^[a-z][a-z0-9+.-]*:\/\//i.test(trimmed);
+  if (hasProtocol) return trimmed;
+
+  const isLocalhost = /^(localhost|127\.0\.0\.1|\[::1\])(:|\/|$)/i.test(trimmed);
+  return `${isLocalhost ? 'http' : 'https'}://${trimmed}`;
+}
+
+const resolvedBaseUrl = normalizeApiBaseUrl(process.env.NEXT_PUBLIC_API_URL);
 
 let refreshPromise: Promise<void> | null = null;
 
@@ -40,10 +52,7 @@ function attachCsrfInterceptor(client: ReturnType<typeof axios.create>) {
           if (token) {
             config.headers.set('x-csrf-token', token);
           }
-        } catch {
-          // If the CSRF token cannot be fetched, let the request proceed;
-          // the server will reject it with 403 if the token is required.
-        }
+        } catch {}
       }
       return config;
     }
@@ -138,14 +147,9 @@ export const httpClient = (() => {
       ) {
         originalConfig._retry = true;
         try {
-          // Single-flight: concurrent 401s in this tab share one refresh.
           await refreshAccessToken();
           return client(originalConfig);
         } catch (refreshError) {
-          // Only a definitive 401 from /auth/refresh means the session
-          // is gone. Network errors, timeouts and 5xx leave the cookies
-          // intact, so surface the original error and let the next
-          // request retry the refresh.
           const isDefinitiveAuthFailure =
             axios.isAxiosError(refreshError) &&
             refreshError.response?.status === 401;

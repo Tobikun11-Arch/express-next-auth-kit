@@ -118,7 +118,15 @@ You need an email service to send verification and password reset emails.
 1. Go to [vercel.com](https://vercel.com/) and sign up with GitHub
 2. Import your repository
 3. Set the **root directory** to `backend`
-4. In **Environment Variables**, add all your `backend/.env` values
+4. In **Environment Variables**, add all your `backend/.env` values, plus:
+   - `CORS_ORIGINS` = your **frontend** origin, e.g.
+     `https://app.vercel.app` (comma-separate multiple origins).
+     Required — when unset the API only allows `http://localhost:3000`, and
+     browsers reject every response with
+     *"CORS header 'Access-Control-Allow-Origin' missing"*. Never use `*`; it is
+     incompatible with credentialed requests.
+   - `COOKIE_SECURE` = `true` and `COOKIE_SAMESITE` = `none` when the frontend
+     and API are on different domains.
 5. Deploy
 
 ### Frontend
@@ -128,7 +136,11 @@ You need an email service to send verification and password reset emails.
 3. Set the **root directory** to `frontend`
 4. In **Environment Variables**, add:
    - `NEXT_PUBLIC_API_URL` = `https://your-backend.vercel.app/api`
-5. Deploy
+     — the `https://` prefix is **required**. Omitting it makes axios treat the
+     value as a relative path, so requests resolve against the frontend origin
+     and every call returns `404 Not Found`.
+5. Redeploy — `NEXT_PUBLIC_*` values are inlined at build time, so saving the
+   variable alone is not enough.
 
 ---
 
