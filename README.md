@@ -268,10 +268,12 @@ For the backend, make sure to set all environment variables in your Vercel proje
 
 ## Contributing
 
-Pull requests are welcome! For major changes, please open an issue first to discuss what you'd like to change.
+Contributions are welcome! Please read [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines on how to get started, coding standards, and the pull request process.
+
+For major changes, please open an issue first to discuss what you'd like to change.
 
 ---
 
 ## License
 
-MIT
+This project is licensed under the [MIT License](./LICENSE).
